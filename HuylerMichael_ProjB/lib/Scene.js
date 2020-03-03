@@ -45,12 +45,13 @@ class Scene {
         this.buffer.fBuf[buffer_index] = color[0];
         this.buffer.fBuf[buffer_index + 1] = color[1];
         this.buffer.fBuf[buffer_index + 2] = color[2];
-        if (p_y == p_x) console.log(p_x, p_y, this.eye_ray, hit);
+        // if (p_y == p_x) console.log(p_x, p_y, this.eye_ray, hit);
       }
     }
     // console.log("after: ", this.buffer.fBuf);
     this.buffer.toInt();
-    console.log("after: ", this.buffer.iBuf);
+    // console.log("after: ", this.buffer.iBuf);
+    vbo_ray.reloadTexture();
   }
 
 }

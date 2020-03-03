@@ -7,10 +7,9 @@ class Geometry {
     this._type = type;
     switch (this._type) {
       case GEOMETRIES.GRID:
-        this.zGrid = -5.0;
         this.xgap = 1.0;
         this.ygap = 1.0;
-        this.linewidth = 0.1;
+        this.lineWidth = 0.1;
         this.lineColor = glMatrix.vec4.fromValues(0.2, 0.5, 0.2, 1.0);
         this.gapColor = glMatrix.vec4.fromValues(0.9, 0.9, 0.9, 1.0);
         this.skyColor = glMatrix.vec4.fromValues(0.3, 0.9, 0.9, 1.0);
@@ -24,15 +23,15 @@ class Geometry {
     switch (this._type) {
       case GEOMETRIES.GRID:
         // calculate the hit point
-        var t_0 = (this.zGrid - inRay.origin[2]) / inRay.direction[2];
-        if (t_0 < 0) {
+        var t_0 = -inRay.origin[2] / inRay.direction[2];
+        if (t_0 < 0 || t_0 > hit.t_0) {
           hit.hitNum = -1;
           return;
         }
         hit.t_0 = t_0;
         hit.hitGeom = this;
-        glMatrix.vec4.scaleAndAdd(hit.modelHitPoint, inRay.origin, inRay.direction, hit.t_0);
-        glMatrix.vec4.copy(hit.hitPoint, hit.modelHitPoint);
+        glMatrix.vec4.scaleAndAdd(hit.modelHitPoint, inRay.origin, inRay.direction, t_0);
+        glMatrix.vec4.scaleAndAdd(hit.hitPoint, inRay.origin, inRay.direction, t_0);
         glMatrix.vec4.negate(hit.viewNormal, inRay.direction);
         glMatrix.vec4.normalize(hit.viewNormal, hit.viewNormal);
         glMatrix.vec4.set(hit.surfaceNormal, 0, 0, 1, 0);
@@ -50,7 +49,7 @@ class Geometry {
           hit.hitNum = 1;
           return;
         }
-        hit.hitNum = Math.random() < 0.5 ? 0 : 1;
+        hit.hitNum = 0;
         break;
       default:
         break;

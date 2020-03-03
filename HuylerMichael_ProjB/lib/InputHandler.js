@@ -31,7 +31,6 @@ function keyDown(kev) {
     case "KeyT":
     case "84":
       g_scene.traceImage();
-      vbo_ray.reloadTexture();
       break;
     case "Period":
     case "86":
