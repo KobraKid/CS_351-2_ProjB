@@ -262,4 +262,10 @@ class VBOBox {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo_loc);
     gl.bufferSubData(gl.ARRAY_BUFFER, index * this.FSIZE, data);
   }
+
+  reloadTexture() {
+    // gl.useProgram(this.shader_loc);
+    // gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo_loc);
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, g_image.width, g_image.height, gl.RGB, gl.UNSIGNED_BYTE, g_image.iBuf);
+  }
 }

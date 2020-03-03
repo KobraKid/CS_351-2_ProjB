@@ -14,7 +14,7 @@ var canvas;
 // Screen aspect ratio
 var aspect;
 
-var g_image = new ImageBuffer(512, 512);
+var g_image = new ImageBuffer(256, 256);
 var g_scene = new Scene();
 
 /* WebGL preview VBOs */
@@ -79,6 +79,7 @@ function main() {
     }
   };
   tick();
+  g_scene.traceImage();
 }
 
 /**
@@ -199,14 +200,15 @@ function initVBOBoxes() {
     vertex_shader_1,
     fragment_shader_1,
     new Float32Array([
-      0, 0, 0, 0,
-      1, 0, 0, 0,
-      0, 1, 0, 0,
-      1, 1, 0, 0,
+      -1.00, 1.00, 0.0, 1.0,
+      -1.00, -1.00, 0.0, 0.0,
+      1.00, 1.00, 1.0, 1.0,
+      1.00, -1.00, 1.0, 0.0,
     ]),
     gl.TRIANGLE_STRIP,
     4, {
-      ['a_position_' + id]: [0, 4],
+      ['a_position_' + id]: [0, 2],
+      ['a_texture_coord_' + id]: [2, 2],
     },
     id,
     () => {

@@ -20,18 +20,19 @@ class Scene {
   }
 
   traceImage() {
+    // console.log("before: ", this.buffer.fBuf);
     this.ray_camera.rayPerspective(tracker.camFovy, tracker.camAspect, tracker.camNear);
     this.ray_camera.rayLookAt(tracker.camEyePoint, tracker.camAimPoint, tracker.camUpVector);
     this.setImageBuffer(this.buffer);
     var color = glMatrix.vec4.create();
     var buffer_index = 0;
-    var hit = new Hit();
+    var hit = new Hit(this.skyColor);
     for (var p_y = 0; p_y < this.buffer.height; p_y++) {
       for (var p_x = 0; p_x < this.buffer.width; p_x++) {
-        this.ray_camera.makeEyeRay(this.ray, p_x, p_y);
+        this.ray_camera.makeEyeRay(this.eye_ray, p_x, p_y);
         hit.clear();
         for (var i = 0; i < this.geometries.size; i++) {
-          this.geometries[i].trace(this.ray, hit);
+          this.geometries.get(i).trace(this.eye_ray, hit);
         }
         if (hit.hitNum == 0) {
           glMatrix.vec4.copy(color, hit.hitGeom.gapColor);
@@ -41,12 +42,15 @@ class Scene {
           glMatrix.vec4.copy(color, this.skyColor);
         }
         buffer_index = (p_y * this.buffer.width + p_x) * this.buffer.pixel_size;
-        this.buffer.pix[buffer_index] = color[0];
-        this.buffer.pix[buffer_index + 1] = color[1];
-        this.buffer.pix[buffer_index + 2] = color[2];
+        this.buffer.fBuf[buffer_index] = color[0];
+        this.buffer.fBuf[buffer_index + 1] = color[1];
+        this.buffer.fBuf[buffer_index + 2] = color[2];
+        if (p_y == p_x) console.log(p_x, p_y, this.eye_ray, hit);
       }
     }
+    // console.log("after: ", this.buffer.fBuf);
     this.buffer.toInt();
+    console.log("after: ", this.buffer.iBuf);
   }
 
 }

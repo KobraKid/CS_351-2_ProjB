@@ -28,6 +28,11 @@ function keyDown(kev) {
     case "80":
       tracker.pause = !tracker.pause;
       break;
+    case "KeyT":
+    case "84":
+      g_scene.traceImage();
+      vbo_ray.reloadTexture();
+      break;
     case "Period":
     case "86":
       toggle_help();
@@ -142,6 +147,7 @@ function updateKeypresses() {
         g_perspective_eye[1] += C[1];
         g_perspective_lookat[1] += C[1];
         break;
+      /*
       case "KeyI":
       case "73":
         g_perspective_lookat[2] += 0.05;
@@ -162,6 +168,7 @@ function updateKeypresses() {
         g_perspective_lookat[0] = g_perspective_eye[0] + Math.cos(theta);
         g_perspective_lookat[1] = g_perspective_eye[1] + Math.sin(theta);
         break;
+      */
       default:
         // console.log("Unused key: " + key);
         break;

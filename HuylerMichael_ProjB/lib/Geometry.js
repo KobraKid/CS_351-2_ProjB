@@ -7,13 +7,13 @@ class Geometry {
     this._type = type;
     switch (this._type) {
       case GEOMETRIES.GRID:
-        this.zGrid;
-        this.xgap;
-        this.ygap;
-        this.linewidth;
-        this.linecolor = glMatrix.vec4.fromValues(0.2, 0.5, 0.2, 1.0);
-        this.gapcolor = glMatrix.vec4.fromValues(0.9, 0.9, 0.9, 1.0);
-        this.skycolor = glMatrix.vec4.fromValues(0.3, 0.9, 0.9, 1.0);
+        this.zGrid = -5.0;
+        this.xgap = 1.0;
+        this.ygap = 1.0;
+        this.linewidth = 0.1;
+        this.lineColor = glMatrix.vec4.fromValues(0.2, 0.5, 0.2, 1.0);
+        this.gapColor = glMatrix.vec4.fromValues(0.9, 0.9, 0.9, 1.0);
+        this.skyColor = glMatrix.vec4.fromValues(0.3, 0.9, 0.9, 1.0);
         break;
       default:
         break;
@@ -23,22 +23,18 @@ class Geometry {
   trace(inRay, hit) {
     switch (this._type) {
       case GEOMETRIES.GRID:
-        // Copy the in ray
-        var rayT = new Ray();
-        glMatrix.vec4.copy(inRay.origin, rayT.origin);
-        glMatrix.vec4.copy(inRay.direction, rayT.direction);
-
         // calculate the hit point
-        var t_0 = -rayT.origin[2] / rayT.direction[2];
-        if (t_0 < 0 || t_0 > hit.t_0) {
+        var t_0 = (this.zGrid - inRay.origin[2]) / inRay.direction[2];
+        if (t_0 < 0) {
+          hit.hitNum = -1;
           return;
         }
         hit.t_0 = t_0;
         hit.hitGeom = this;
-        glMatrix.vec4.scaleAndAdd(hit.modelHitPoint, rayT.origin, rayT.direction, hit.t_0);
+        glMatrix.vec4.scaleAndAdd(hit.modelHitPoint, inRay.origin, inRay.direction, hit.t_0);
         glMatrix.vec4.copy(hit.hitPoint, hit.modelHitPoint);
-        glMatrix.vec4.negate(hit.viewN, inRay.direction);
-        glMatrix.vec4.normalize(hit.viewN, hit.viewN);
+        glMatrix.vec4.negate(hit.viewNormal, inRay.direction);
+        glMatrix.vec4.normalize(hit.viewNormal, hit.viewNormal);
         glMatrix.vec4.set(hit.surfaceNormal, 0, 0, 1, 0);
 
         // calculate the color
@@ -54,8 +50,7 @@ class Geometry {
           hit.hitNum = 1;
           return;
         }
-        hit.hitNum = 0;
-        return;
+        hit.hitNum = Math.random() < 0.5 ? 0 : 1;
         break;
       default:
         break;
@@ -68,15 +63,16 @@ class GeometryList {
     this._geom = [];
   }
 
-  get geometry() {
-    return this._geom;
-  }
   get size() {
     return this._geom.length;
   }
 
   add(g) {
     this._geom.push(g);
+  }
+
+  get(i) {
+    return this._geom[i];
   }
 
 }
