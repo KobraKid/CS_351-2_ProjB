@@ -209,7 +209,10 @@ function initVBOBoxes() {
       ['a_position_' + id]: [0, 4],
     },
     id,
-    () => gl.enable(gl.DEPTH_TEST));
+    () => {
+      gl.enable(gl.DEPTH_TEST)
+      gl.uniform1i(this.u_sampler_location, 0);
+    });
   vbo_ray.init();
 }
 

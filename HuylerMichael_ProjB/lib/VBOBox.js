@@ -4,16 +4,6 @@
  * @author Michael Huyler
  */
 
-/* Camera variables */
-// where the camera is
-var g_perspective_eye = [16, 0, 1];
-// where the camera is pointing
-var g_perspective_lookat = [15, 0, 1];
-// the camera's up axis
-var g_perspective_up = [0, 0, 1];
-// rotation step
-var theta = 3.14;
-
 /**
  * A complete encapsulation of a VBO and its corresponding shader program.
  *
@@ -183,7 +173,7 @@ class VBOBox {
       }
 
       this.u_sampler_location = gl.getUniformLocation(this.shader_loc, 'u_sampler_' + this.box_num);
-      if (!this.u_projection_matrix_loc) {
+      if (!this.u_sampler_location) {
         console.log(this.constructor.name +
           '.init() failed to get GPU location for u_sampler_' + this.box_num + ' uniform');
         return;
@@ -193,7 +183,6 @@ class VBOBox {
       gl.bindTexture(gl.TEXTURE_2D, this.u_texture_location);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, g_image.width, g_image.height, 0, gl.RGB, gl.UNSIGNED_BYTE, g_image.iBuf);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-      gl.uniform1i(this.u_sampler_location, 0);
     }
   }
 
@@ -240,13 +229,8 @@ class VBOBox {
    */
   adjust() {
     this.custom_adjust();
-    glMatrix.mat4.perspective(this.projection_matrix, 30 * Math.PI / 180, aspect, 1, 100);
-    glMatrix.mat4.lookAt(
-      this.view_matrix,
-      glMatrix.vec3.fromValues(g_perspective_eye[0], g_perspective_eye[1], g_perspective_eye[2]),
-      glMatrix.vec3.fromValues(g_perspective_lookat[0], g_perspective_lookat[1], g_perspective_lookat[2]),
-      glMatrix.vec3.fromValues(g_perspective_up[0], g_perspective_up[1], g_perspective_up[2]),
-    );
+    glMatrix.mat4.perspective(this.projection_matrix, glMatrix.glMatrix.toRadian(tracker.camFovy), tracker.camAspect, tracker.camNear, tracker.camFar);
+    glMatrix.mat4.lookAt(this.view_matrix, tracker.camEyePoint, tracker.camAimPoint, tracker.camUpVector);
     glMatrix.mat4.identity(this.model_matrix);
     gl.uniformMatrix4fv(this.u_model_matrix_loc, false, this.model_matrix);
     gl.uniformMatrix4fv(this.u_view_matrix_loc, false, this.view_matrix);
