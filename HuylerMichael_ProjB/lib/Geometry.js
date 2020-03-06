@@ -21,7 +21,9 @@ class Geometry {
         this.gapColor = colors[1];
         break;
       case GEOMETRIES.SPHERE:
-        this.radium = 2.0;
+        this.radius = 2.0;
+        this.lineColor = colors[0];
+        this.gapColor = colors[1];
         break;
       default:
         break;
@@ -111,6 +113,40 @@ class Geometry {
 
         // otherwise this ray hit a gap
         hit.hitNum = 0;
+        break;
+      case GEOMETRIES.SPHERE:
+        // copy ray and transform
+        var rayT = new Ray();
+        glMatrix.vec4.transformMat4(rayT.origin, inRay.origin, this.world_to_model);
+        glMatrix.vec4.transformMat4(rayT.direction, inRay.direction, this.world_to_model);
+
+        var r2s = glMatrix.vec4.create();
+        glMatrix.vec4.subtract(r2s, glMatrix.vec4.fromValues(0, 0, 0, 1), rayT.origin);
+        var L2 = glMatrix.vec3.dot(r2s, r2s);
+        if (L2 <= 1.0) return; // inside sphere
+
+        var tcaS = glMatrix.vec3.dot(rayT.direction, r2s);
+        if (tcaS < 0.0) return; // missed, behind camera
+
+        var DL2 = glMatrix.vec3.dot(rayT.direction, rayT.direction);
+        var tca2 = tcaS * tcaS / DL2;
+
+        var LM2 = L2 - tca2;
+        if (LM2 > 1.0) return; // missed, outside of sphere
+
+        var L2hc = (1.0 - LM2);
+        var t0hit = tcaS/DL2 - Math.sqrt(L2hc/DL2);
+        if (t0hit > hit.t_0) return; // farther than some previous hit
+
+        hit.t_0 = t0hit;
+        hit.hitGeom = this;
+        glMatrix.vec4.scaleAndAdd(hit.modelHitPoint, rayT.origin, rayT.direction, hit.t_0);
+        glMatrix.vec4.scaleAndAdd(hit.hitPoint, inRay.origin, inRay.direction, hit.t_0);
+        glMatrix.vec4.negate(hit.viewNormal, inRay.direction);
+        glMatrix.vec4.normalize(hit.viewNormal, hit.viewNormal);
+        glMatrix.vec4.transformMat4(hit.surfaceNormal, glMatrix.vec4.fromValues(0, 0, 1, 0), this.normal_to_world);
+        glMatrix.vec4.normalize(hit.surfaceNormal, hit.surfaceNormal);
+        hit.hitNum = 1;
         break;
       default:
         break;
