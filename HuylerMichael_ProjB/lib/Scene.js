@@ -1,8 +1,8 @@
 class Scene {
   constructor(max_depth = 1) {
-    this.skyColor = glMatrix.vec4.fromValues(0.3, 1.0, 1.0, 1.0);
+    this.sky_color = glMatrix.vec4.fromValues(0.3, 1.0, 1.0, 1.0);
     this.ray_camera = new Camera();
-    this.eye_ray = new Ray(this.skyColor);
+    this.eye_ray = new Ray();
     this.buffer = new ImageBuffer();
     this.geometries = new GeometryList();
     this.materials = new MaterialList();
@@ -11,7 +11,33 @@ class Scene {
     this.ray_camera.rayPerspective(tracker.camera.fovy, tracker.camera.aspect, tracker.camera.near);
     this.ray_camera.rayLookAt(tracker.camera.eye_point, tracker.camera.aim_point, tracker.camera.up_vector);
     this.setImageBuffer(g_image);
-    this.geometries.add(new Geometry(GEOMETRIES.GRID));
+
+    this.geometries.add(new Geometry(GEOMETRIES.GRID,
+      [
+        glMatrix.vec4.fromValues(0.2, 0.5, 0.2, 1.0),
+        glMatrix.vec4.fromValues(0.9, 0.9, 0.9, 1.0),
+      ]));
+    this.geometries.get(0).setIdentity();
+
+    this.geometries.add(new Geometry(GEOMETRIES.DISC,
+      [
+        glMatrix.vec4.fromValues(0.9, 0.9, 0.9, 1.0),
+        glMatrix.vec4.fromValues(0.2, 0.5, 0.2, 1.0),
+      ]));
+    this.geometries.get(1).setIdentity();
+    this.geometries.get(1).rayTranslate(1, 1, 3.3);
+    this.geometries.get(1).rayRotate(0.25 * Math.PI, 1, 0, 0);
+    this.geometries.get(1).rayRotate(0.25 * Math.PI, 0, 0, 1);
+
+    this.geometries.add(new Geometry(GEOMETRIES.DISC,
+      [
+        glMatrix.vec4.fromValues(0.9, 0.5, 0.9, 1.0),
+        glMatrix.vec4.fromValues(0.2, 0.9, 0.2, 1.0),
+      ]));
+    this.geometries.get(2).setIdentity();
+    this.geometries.get(2).rayTranslate(-1, 1, 1.3);
+    this.geometries.get(2).rayRotate(0.75 * Math.PI, 1, 0, 0);
+    this.geometries.get(2).rayRotate(Math.PI / 3, 0, 0, 1);
   }
 
   setImageBuffer(buffer) {
@@ -25,10 +51,10 @@ class Scene {
     this.setImageBuffer(this.buffer);
     var color = glMatrix.vec4.create();
     var buffer_index = 0;
-    var hit = new Hit(this.skyColor);
+    var hit = new Hit(this.sky_color);
     for (var p_y = 0; p_y < this.buffer.height; p_y++) {
       for (var p_x = 0; p_x < this.buffer.width; p_x++) {
-        color = glMatrix.vec4.fromValues(0, 0, 0, 0);
+        glMatrix.vec4.zero(color);
         for (var subpixel = 0; subpixel < tracker.aa * tracker.aa; subpixel++) {
           this.ray_camera.makeEyeRay(this.eye_ray, p_x, p_y, subpixel);
           hit.clear();
@@ -40,11 +66,13 @@ class Scene {
           } else if (hit.hitNum == 1) {
             glMatrix.vec4.add(color, color, hit.hitGeom.lineColor);
           } else {
-            glMatrix.vec4.add(color, color, this.skyColor);
+            glMatrix.vec4.add(color, color, this.sky_color);
           }
+          // if (p_x == p_y) console.log(hit.hitNum, hit.hitGeom);
         }
-        buffer_index = (p_y * this.buffer.width + p_x) * this.buffer.pixel_size;
+        // average the colors of each supersample
         glMatrix.vec4.scale(color, color, 1 / (tracker.aa * tracker.aa));
+        buffer_index = (p_y * this.buffer.width + p_x) * this.buffer.pixel_size;
         this.buffer.fBuf[buffer_index] = color[0];
         this.buffer.fBuf[buffer_index + 1] = color[1];
         this.buffer.fBuf[buffer_index + 2] = color[2];
