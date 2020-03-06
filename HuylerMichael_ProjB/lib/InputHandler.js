@@ -7,10 +7,16 @@
  * @author Michael Huyler
  */
 
+/* Keyboard vars */
 var keysPressed = {};
 var keyPollingFrequency = 3; // Frames between key polling
 var shouldUpdateKeypress = 0;
-var mouseClicked = false;
+/* Mouse vars */
+var mouse_clicked = false;
+var mouse_x = 0;
+var mouse_y = 0;
+var mouse_drag_x = 0;
+var mouse_drag_y = 0;
 
 /**
  * Performs an action when a key is pressed.
@@ -84,90 +90,36 @@ function updateKeypresses() {
     switch (key) {
       case "KeyW":
       case "87":
-        var D = [
-          (g_perspective_lookat[0] - g_perspective_eye[0]) * 0.5,
-          (g_perspective_lookat[1] - g_perspective_eye[1]) * 0.5,
-          (g_perspective_lookat[2] - g_perspective_eye[2]) * 0.5,
-        ];
-        g_perspective_eye[0] += D[0];
-        g_perspective_lookat[0] += D[0];
-        g_perspective_eye[1] += D[1];
-        g_perspective_lookat[1] += D[1];
-        g_perspective_eye[2] += D[2];
-        g_perspective_lookat[2] += D[2];
+        var move = glMatrix.vec4.create();
+        glMatrix.vec4.sub(move, tracker.camAimPoint, tracker.camEyePoint);
+        glMatrix.vec4.normalize(move, move);
+        glMatrix.vec4.scale(move, move, tracker.camSpeed);
+        glMatrix.vec4.add(tracker.camAimPoint, tracker.camAimPoint, move);
+        glMatrix.vec4.add(tracker.camEyePoint, tracker.camEyePoint, move);
         break;
       case "KeyA":
       case "65":
-        var D = [
-          g_perspective_lookat[0] - g_perspective_eye[0],
-          g_perspective_lookat[1] - g_perspective_eye[1],
-          0
-        ];
-        // Cross Product
-        var C = [
-          (D[1] * 1 - D[2] * 0) * 0.5,
-          (D[2] * 0 - D[0] * 1) * 0.5,
-          0 // (D[0] * 0 - D[1] * 0) * 0.5
-        ];
-        g_perspective_eye[0] -= C[0];
-        g_perspective_lookat[0] -= C[0];
-        g_perspective_eye[1] -= C[1];
-        g_perspective_lookat[1] -= C[1];
+        var move = glMatrix.vec4.fromValues(Math.sin(tracker.camYaw), -Math.cos(tracker.camYaw), 0, 0);
+        glMatrix.vec4.scale(move, move, -tracker.camSpeed);
+        glMatrix.vec4.add(tracker.camAimPoint, tracker.camAimPoint, move);
+        glMatrix.vec4.add(tracker.camEyePoint, tracker.camEyePoint, move);
         break;
       case "KeyS":
       case "83":
-        var D = [
-          (g_perspective_lookat[0] - g_perspective_eye[0]) * 0.5,
-          (g_perspective_lookat[1] - g_perspective_eye[1]) * 0.5,
-          (g_perspective_lookat[2] - g_perspective_eye[2]) * 0.5,
-        ];
-        g_perspective_eye[0] -= D[0];
-        g_perspective_lookat[0] -= D[0];
-        g_perspective_eye[1] -= D[1];
-        g_perspective_lookat[1] -= D[1];
-        g_perspective_eye[2] -= D[2];
-        g_perspective_lookat[2] -= D[2];
+        var move = glMatrix.vec4.create();
+        glMatrix.vec4.sub(move, tracker.camEyePoint, tracker.camAimPoint);
+        glMatrix.vec4.normalize(move, move);
+        glMatrix.vec4.scale(move, move, tracker.camSpeed);
+        glMatrix.vec4.add(tracker.camAimPoint, tracker.camAimPoint, move);
+        glMatrix.vec4.add(tracker.camEyePoint, tracker.camEyePoint, move);
         break;
       case "KeyD":
       case "68":
-        var D = [
-          g_perspective_lookat[0] - g_perspective_eye[0],
-          g_perspective_lookat[1] - g_perspective_eye[1],
-          0
-        ];
-        // Cross Product
-        var C = [
-          (D[1] * 1 - D[2] * 0) * 0.5,
-          (D[2] * 0 - D[0] * 1) * 0.5,
-          0 // (D[0] * 0 - D[1] * 0) * 0.5
-        ];
-        g_perspective_eye[0] += C[0];
-        g_perspective_lookat[0] += C[0];
-        g_perspective_eye[1] += C[1];
-        g_perspective_lookat[1] += C[1];
+        var move = glMatrix.vec4.fromValues(Math.sin(tracker.camYaw), -Math.cos(tracker.camYaw), 0, 0);
+        glMatrix.vec4.scale(move, move, tracker.camSpeed);
+        glMatrix.vec4.add(tracker.camAimPoint, tracker.camAimPoint, move);
+        glMatrix.vec4.add(tracker.camEyePoint, tracker.camEyePoint, move);
         break;
-      /*
-      case "KeyI":
-      case "73":
-        g_perspective_lookat[2] += 0.05;
-        break;
-      case "KeyJ":
-      case "74":
-        theta += 0.05;
-        g_perspective_lookat[0] = g_perspective_eye[0] + Math.cos(theta);
-        g_perspective_lookat[1] = g_perspective_eye[1] + Math.sin(theta);
-        break;
-      case "KeyK":
-      case "75":
-        g_perspective_lookat[2] -= 0.05;
-        break;
-      case "KeyL":
-      case "76":
-        theta -= 0.05;
-        g_perspective_lookat[0] = g_perspective_eye[0] + Math.cos(theta);
-        g_perspective_lookat[1] = g_perspective_eye[1] + Math.sin(theta);
-        break;
-      */
       default:
         // console.log("Unused key: " + key);
         break;
@@ -177,15 +129,58 @@ function updateKeypresses() {
 }
 
 function mouseDown(ev) {
-  mouseClicked = true;
+  var mouse_pos = mouseToCVV(ev);
+  mouse_x = mouse_pos[0];
+  mouse_y = mouse_pos[1];
+  mouse_clicked = true;
 }
 
 function mouseUp(ev) {
-  mouseClicked = false;
+  var mouse_pos = mouseToCVV(ev);
+  mouse_clicked = false;
+  mouse_drag_x += (mouse_pos[0] - mouse_x);
+  mouse_drag_y += (mouse_pos[1] - mouse_y);
+  mouse_x = mouse_pos[0];
+  mouse_y = mouse_pos[1];
 }
 
 function mouseMove(ev) {
+  if (!mouse_clicked) return;
 
+  var mouse_pos = mouseToCVV(ev);
+  mouse_drag_x += (mouse_pos[0] - mouse_x);
+  mouse_drag_y += (mouse_pos[1] - mouse_y);
+  mouse_x = mouse_pos[0];
+  mouse_y = mouse_pos[1];
+
+  tracker.camYaw = (Math.PI / 2.0) + mouse_drag_x * 1.0;
+  if (tracker.camYaw < -Math.PI) {
+    tracker.camYaw += 2 * Math.PI;
+  } else if (tracker.camYaw > Math.PI) {
+    tracker.camYaw -= 2 * Math.PI;
+  }
+
+  tracker.camPitch = mouse_drag_y * 1.0;
+  if (tracker.camPitch < -Math.PI / 2) {
+    tracker.camPitch = -Math.PI / 2;
+  } else if (tracker.camPitch > Math.PI / 2) {
+    tracker.camPitch = Math.PI / 2;
+  }
+
+  tracker.camAimPoint[0] = tracker.camEyePoint[0] + Math.cos(tracker.camYaw) * Math.cos(tracker.camPitch);
+  tracker.camAimPoint[1] = tracker.camEyePoint[1] + Math.sin(tracker.camYaw) * Math.cos(tracker.camPitch);
+  tracker.camAimPoint[2] = tracker.camEyePoint[2] + Math.sin(tracker.camPitch);
+
+  tracker.camUpVector[0] = Math.cos(tracker.camYaw) * Math.cos(tracker.camPitch + Math.PI / 2);
+  tracker.camUpVector[1] = Math.sin(tracker.camYaw) * Math.cos(tracker.camPitch + Math.PI / 2);
+  tracker.camUpVector[2] = Math.sin(tracker.camPitch + Math.PI / 2);
+}
+
+function mouseToCVV(ev) {
+  return [
+    (ev.clientX - canvas.getBoundingClientRect().left - (canvas.width / 2)) / (canvas.width / 2),
+    (ev.clientY + canvas.getBoundingClientRect().top + (canvas.height / 2)) / (canvas.height / 2)
+  ];
 }
 
 /**

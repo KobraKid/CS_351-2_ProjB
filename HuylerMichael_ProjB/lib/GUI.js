@@ -29,6 +29,24 @@ var GuiTracker = function() {
     this.ms = elapsed / this.speed;
     tracker.fps = 1000.0 / elapsed;
   }
+  /*
+   * WebGL camera vars
+   */
+  this.camSpeed = 0.5;
+  this.camera = {
+    yaw: Math.PI / 2.0,
+    pitch: 0.0,
+    fovy: 45.0,
+    aspect: 1.0,
+    near: 1.0,
+    far: 10000.0,
+    eye_point: glMatrix.vec4.create(),
+    aim_point: glMatrix.vec4.create(),
+    up_vector: glMatrix.vec4.create(),
+    // initial constants
+    initial_yaw: Math.PI / 2.0,
+    initial_pitch: 0.0,
+  };
   this.camYaw = Math.PI / 2.0;
   this.camPitch = 0.0;
   this.camFovy = 45.0;
@@ -54,6 +72,18 @@ var help_visible = false;
  * Initializes the GUI.
  */
 function initGui() {
+  tracker.camera.eye_point = glMatrix.vec4.fromValues(0, -8, 2, 1);
+  tracker.camera.aim_point = glMatrix.vec4.fromValues(
+    tracker.camera.eye_point[0] + Math.cos(tracker.camera.yaw) * Math.cos(tracker.camera.pitch),
+    tracker.camera.eye_point[1] + Math.sin(tracker.camera.yaw) * Math.cos(tracker.camera.pitch),
+    tracker.camera.eye_point[2] + Math.sin(tracker.camera.pitch),
+    1.0);
+  tracker.camera.up_vector = glMatrix.vec4.fromValues(
+    Math.cos(tracker.camera.yaw) * Math.cos(tracker.camera.pitch + Math.PI / 2),
+    Math.sin(tracker.camera.yaw) * Math.cos(tracker.camera.pitch + Math.PI / 2),
+    Math.sin(tracker.camera.pitch + Math.PI / 2),
+    0.0);
+
   gui = new dat.GUI({
     name: 'My GUI',
     hideable: false
