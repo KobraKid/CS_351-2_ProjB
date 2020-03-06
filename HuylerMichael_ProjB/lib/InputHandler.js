@@ -91,34 +91,34 @@ function updateKeypresses() {
       case "KeyW":
       case "87":
         var move = glMatrix.vec4.create();
-        glMatrix.vec4.sub(move, tracker.camAimPoint, tracker.camEyePoint);
+        glMatrix.vec4.sub(move, tracker.camera.aim_point, tracker.camera.eye_point);
         glMatrix.vec4.normalize(move, move);
         glMatrix.vec4.scale(move, move, tracker.camSpeed);
-        glMatrix.vec4.add(tracker.camAimPoint, tracker.camAimPoint, move);
-        glMatrix.vec4.add(tracker.camEyePoint, tracker.camEyePoint, move);
+        glMatrix.vec4.add(tracker.camera.aim_point, tracker.camera.aim_point, move);
+        glMatrix.vec4.add(tracker.camera.eye_point, tracker.camera.eye_point, move);
         break;
       case "KeyA":
       case "65":
-        var move = glMatrix.vec4.fromValues(Math.sin(tracker.camYaw), -Math.cos(tracker.camYaw), 0, 0);
+        var move = glMatrix.vec4.fromValues(Math.sin(tracker.camera.yaw), -Math.cos(tracker.camera.yaw), 0, 0);
         glMatrix.vec4.scale(move, move, -tracker.camSpeed);
-        glMatrix.vec4.add(tracker.camAimPoint, tracker.camAimPoint, move);
-        glMatrix.vec4.add(tracker.camEyePoint, tracker.camEyePoint, move);
+        glMatrix.vec4.add(tracker.camera.aim_point, tracker.camera.aim_point, move);
+        glMatrix.vec4.add(tracker.camera.eye_point, tracker.camera.eye_point, move);
         break;
       case "KeyS":
       case "83":
         var move = glMatrix.vec4.create();
-        glMatrix.vec4.sub(move, tracker.camEyePoint, tracker.camAimPoint);
+        glMatrix.vec4.sub(move, tracker.camera.eye_point, tracker.camera.aim_point);
         glMatrix.vec4.normalize(move, move);
         glMatrix.vec4.scale(move, move, tracker.camSpeed);
-        glMatrix.vec4.add(tracker.camAimPoint, tracker.camAimPoint, move);
-        glMatrix.vec4.add(tracker.camEyePoint, tracker.camEyePoint, move);
+        glMatrix.vec4.add(tracker.camera.aim_point, tracker.camera.aim_point, move);
+        glMatrix.vec4.add(tracker.camera.eye_point, tracker.camera.eye_point, move);
         break;
       case "KeyD":
       case "68":
-        var move = glMatrix.vec4.fromValues(Math.sin(tracker.camYaw), -Math.cos(tracker.camYaw), 0, 0);
+        var move = glMatrix.vec4.fromValues(Math.sin(tracker.camera.yaw), -Math.cos(tracker.camera.yaw), 0, 0);
         glMatrix.vec4.scale(move, move, tracker.camSpeed);
-        glMatrix.vec4.add(tracker.camAimPoint, tracker.camAimPoint, move);
-        glMatrix.vec4.add(tracker.camEyePoint, tracker.camEyePoint, move);
+        glMatrix.vec4.add(tracker.camera.aim_point, tracker.camera.aim_point, move);
+        glMatrix.vec4.add(tracker.camera.eye_point, tracker.camera.eye_point, move);
         break;
       default:
         // console.log("Unused key: " + key);
@@ -153,27 +153,27 @@ function mouseMove(ev) {
   mouse_x = mouse_pos[0];
   mouse_y = mouse_pos[1];
 
-  tracker.camYaw = (Math.PI / 2.0) + mouse_drag_x * 1.0;
-  if (tracker.camYaw < -Math.PI) {
-    tracker.camYaw += 2 * Math.PI;
-  } else if (tracker.camYaw > Math.PI) {
-    tracker.camYaw -= 2 * Math.PI;
+  tracker.camera.yaw = (Math.PI / 2.0) + mouse_drag_x * 1.0;
+  if (tracker.camera.yaw < -Math.PI) {
+    tracker.camera.yaw += 2 * Math.PI;
+  } else if (tracker.camera.yaw > Math.PI) {
+    tracker.camera.yaw -= 2 * Math.PI;
   }
 
-  tracker.camPitch = mouse_drag_y * 1.0;
-  if (tracker.camPitch < -Math.PI / 2) {
-    tracker.camPitch = -Math.PI / 2;
-  } else if (tracker.camPitch > Math.PI / 2) {
-    tracker.camPitch = Math.PI / 2;
+  tracker.camera.pitch = mouse_drag_y * 1.0;
+  if (tracker.camera.pitch < -Math.PI / 2) {
+    tracker.camera.pitch = -Math.PI / 2;
+  } else if (tracker.camera.pitch > Math.PI / 2) {
+    tracker.camera.pitch = Math.PI / 2;
   }
 
-  tracker.camAimPoint[0] = tracker.camEyePoint[0] + Math.cos(tracker.camYaw) * Math.cos(tracker.camPitch);
-  tracker.camAimPoint[1] = tracker.camEyePoint[1] + Math.sin(tracker.camYaw) * Math.cos(tracker.camPitch);
-  tracker.camAimPoint[2] = tracker.camEyePoint[2] + Math.sin(tracker.camPitch);
+  tracker.camera.aim_point[0] = tracker.camera.eye_point[0] + Math.cos(tracker.camera.yaw) * Math.cos(tracker.camera.pitch);
+  tracker.camera.aim_point[1] = tracker.camera.eye_point[1] + Math.sin(tracker.camera.yaw) * Math.cos(tracker.camera.pitch);
+  tracker.camera.aim_point[2] = tracker.camera.eye_point[2] + Math.sin(tracker.camera.pitch);
 
-  tracker.camUpVector[0] = Math.cos(tracker.camYaw) * Math.cos(tracker.camPitch + Math.PI / 2);
-  tracker.camUpVector[1] = Math.sin(tracker.camYaw) * Math.cos(tracker.camPitch + Math.PI / 2);
-  tracker.camUpVector[2] = Math.sin(tracker.camPitch + Math.PI / 2);
+  tracker.camera.up_vector[0] = Math.cos(tracker.camera.yaw) * Math.cos(tracker.camera.pitch + Math.PI / 2);
+  tracker.camera.up_vector[1] = Math.sin(tracker.camera.yaw) * Math.cos(tracker.camera.pitch + Math.PI / 2);
+  tracker.camera.up_vector[2] = Math.sin(tracker.camera.pitch + Math.PI / 2);
 }
 
 function mouseToCVV(ev) {

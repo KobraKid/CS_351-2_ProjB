@@ -8,8 +8,8 @@ class Scene {
     this.materials = new MaterialList();
     this.lights = new LightList();
 
-    this.ray_camera.rayPerspective(tracker.camFovy, tracker.camAspect, tracker.camNear);
-    this.ray_camera.rayLookAt(tracker.camEyePoint, tracker.camAimPoint, tracker.camUpVector);
+    this.ray_camera.rayPerspective(tracker.camera.fovy, tracker.camera.aspect, tracker.camera.near);
+    this.ray_camera.rayLookAt(tracker.camera.eye_point, tracker.camera.aim_point, tracker.camera.up_vector);
     this.setImageBuffer(g_image);
     this.geometries.add(new Geometry(GEOMETRIES.GRID));
   }
@@ -20,37 +20,37 @@ class Scene {
   }
 
   traceImage() {
-    // console.log("before: ", this.buffer.fBuf);
-    this.ray_camera.rayPerspective(tracker.camFovy, tracker.camAspect, tracker.camNear);
-    this.ray_camera.rayLookAt(tracker.camEyePoint, tracker.camAimPoint, tracker.camUpVector);
+    this.ray_camera.rayPerspective(tracker.camera.fovy, tracker.camera.aspect, tracker.camera.near);
+    this.ray_camera.rayLookAt(tracker.camera.eye_point, tracker.camera.aim_point, tracker.camera.up_vector);
     this.setImageBuffer(this.buffer);
     var color = glMatrix.vec4.create();
     var buffer_index = 0;
     var hit = new Hit(this.skyColor);
     for (var p_y = 0; p_y < this.buffer.height; p_y++) {
       for (var p_x = 0; p_x < this.buffer.width; p_x++) {
-        this.ray_camera.makeEyeRay(this.eye_ray, p_x, p_y);
-        hit.clear();
-        for (var i = 0; i < this.geometries.size; i++) {
-          this.geometries.get(i).trace(this.eye_ray, hit);
-        }
-        if (hit.hitNum == 0) {
-          glMatrix.vec4.copy(color, hit.hitGeom.gapColor);
-        } else if (hit.hitNum == 1) {
-          glMatrix.vec4.copy(color, hit.hitGeom.lineColor);
-        } else {
-          glMatrix.vec4.copy(color, this.skyColor);
+        color = glMatrix.vec4.fromValues(0, 0, 0, 0);
+        for (var subpixel = 0; subpixel < tracker.aa * tracker.aa; subpixel++) {
+          this.ray_camera.makeEyeRay(this.eye_ray, p_x, p_y, subpixel);
+          hit.clear();
+          for (var i = 0; i < this.geometries.size; i++) {
+            this.geometries.get(i).trace(this.eye_ray, hit);
+          }
+          if (hit.hitNum == 0) {
+            glMatrix.vec4.add(color, color, hit.hitGeom.gapColor);
+          } else if (hit.hitNum == 1) {
+            glMatrix.vec4.add(color, color, hit.hitGeom.lineColor);
+          } else {
+            glMatrix.vec4.add(color, color, this.skyColor);
+          }
         }
         buffer_index = (p_y * this.buffer.width + p_x) * this.buffer.pixel_size;
+        glMatrix.vec4.scale(color, color, 1 / (tracker.aa * tracker.aa));
         this.buffer.fBuf[buffer_index] = color[0];
         this.buffer.fBuf[buffer_index + 1] = color[1];
         this.buffer.fBuf[buffer_index + 2] = color[2];
-        // if (p_y == p_x) console.log(p_x, p_y, this.eye_ray, hit);
       }
     }
-    // console.log("after: ", this.buffer.fBuf);
     this.buffer.toInt();
-    // console.log("after: ", this.buffer.iBuf);
     vbo_ray.reloadTexture();
   }
 

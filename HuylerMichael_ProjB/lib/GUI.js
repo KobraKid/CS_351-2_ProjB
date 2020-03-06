@@ -47,23 +47,9 @@ var GuiTracker = function() {
     initial_yaw: Math.PI / 2.0,
     initial_pitch: 0.0,
   };
-  this.camYaw = Math.PI / 2.0;
-  this.camPitch = 0.0;
-  this.camFovy = 45.0;
-  this.camAspect = 1.0;
-  this.camNear = 1.0;
-  this.camFar = 10000.0;
-  this.camEyePoint = glMatrix.vec4.fromValues(0, -8, 2, 1);
-  this.camAimPoint = glMatrix.vec4.fromValues(
-    this.camEyePoint[0] + Math.cos(this.camYaw) * Math.cos(this.camPitch),
-    this.camEyePoint[1] + Math.sin(this.camYaw) * Math.cos(this.camPitch),
-    this.camEyePoint[2] + Math.sin(this.camPitch),
-    1.0);
-  this.camUpVector = glMatrix.vec4.fromValues(
-    Math.cos(this.camYaw) * Math.cos(this.camPitch + Math.PI / 2),
-    Math.sin(this.camYaw) * Math.cos(this.camPitch + Math.PI / 2),
-    Math.sin(this.camPitch + Math.PI / 2),
-    0.0);
+  /* Antialiasing */
+  this.aa = 1;
+  this.jitter = false;
 }
 var tracker = new GuiTracker();
 var help_visible = false;
@@ -90,6 +76,13 @@ function initGui() {
   });
   gui.add(tracker, 'fps', 0, 60, 1).name('FPS').listen();
   gui.add(tracker, 'pause').name('Pause').listen();
+  gui.add(tracker, 'aa', {
+    "1x1": 1,
+    "2x2": 2,
+    "3x3": 3,
+    "4x4": 4,
+  }).name('Antialiasing');
+  gui.add(tracker, 'jitter').name('Jittering');
   gui.open();
   document.getElementsByClassName('close-bottom')[0].onclick = function() {
     gui_open = !gui_open;

@@ -229,8 +229,8 @@ class VBOBox {
    */
   adjust() {
     this.custom_adjust();
-    glMatrix.mat4.perspective(this.projection_matrix, glMatrix.glMatrix.toRadian(tracker.camFovy), tracker.camAspect, tracker.camNear, tracker.camFar);
-    glMatrix.mat4.lookAt(this.view_matrix, tracker.camEyePoint, tracker.camAimPoint, tracker.camUpVector);
+    glMatrix.mat4.perspective(this.projection_matrix, glMatrix.glMatrix.toRadian(tracker.camera.fovy), tracker.camera.aspect, tracker.camera.near, tracker.camera.far);
+    glMatrix.mat4.lookAt(this.view_matrix, tracker.camera.eye_point, tracker.camera.aim_point, tracker.camera.up_vector);
     glMatrix.mat4.identity(this.model_matrix);
     gl.uniformMatrix4fv(this.u_model_matrix_loc, false, this.model_matrix);
     gl.uniformMatrix4fv(this.u_view_matrix_loc, false, this.view_matrix);

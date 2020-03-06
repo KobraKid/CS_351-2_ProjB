@@ -25,9 +25,17 @@ class Camera {
     this.v_frac = (this.frustum.top - this.frustum.bottom) / this.y_max;
   }
 
-  makeEyeRay(ray, x, y) {
-    var u_pos = this.frustum.left + x * this.u_frac;
-    var v_pos = this.frustum.bottom + y * this.v_frac;
+  makeEyeRay(ray, x, y, subpixel) {
+    var sub_x = ((subpixel % tracker.aa) * 2.0 + 1.0) / (2.0 * tracker.aa);
+    var sub_y = ((subpixel / tracker.aa) * 2.0 + 1.0) / (2.0 * tracker.aa);
+    if (tracker.jitter) {
+      var max = 1.0 / (2.0 * tracker.aa);
+      var min = -max;
+      sub_x += Math.random() * (max - min) + min;
+      sub_y += Math.random() * (max - min) + min;
+    }
+    var u_pos = this.frustum.left + (x + sub_x) * this.u_frac;
+    var v_pos = this.frustum.bottom + (y + sub_y) * this.v_frac;
     var pos = glMatrix.vec4.create();
     glMatrix.vec4.scaleAndAdd(pos, pos, this.u, u_pos);
     glMatrix.vec4.scaleAndAdd(pos, pos, this.v, v_pos);
