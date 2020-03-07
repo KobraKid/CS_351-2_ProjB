@@ -73,6 +73,9 @@ class Geometry {
       case GEOMETRIES.DISC:
         // copy ray and transform
         var rayT = new Ray();
+        glMatrix.vec4.copy(rayT.origin, inRay.origin);
+        glMatrix.vec4.copy(rayT.direction, inRay.direction);
+
         glMatrix.vec4.transformMat4(rayT.origin, inRay.origin, this.world_to_model);
         glMatrix.vec4.transformMat4(rayT.direction, inRay.direction, this.world_to_model);
 
@@ -84,14 +87,14 @@ class Geometry {
         if (t_0 < 0 || t_0 > hit.t_0)
           return;
         var plane_intxn = glMatrix.vec4.create();
-        glMatrix.vec4.scaleAndAdd(plane_intxn, inRay.origin, inRay.direction, t_0);
+        glMatrix.vec4.scaleAndAdd(plane_intxn, rayT.origin, rayT.direction, t_0);
         if (plane_intxn[0] * plane_intxn[0] + plane_intxn[1] * plane_intxn[1] > this.radius * this.radius)
           return;
 
         hit.t_0 = t_0;
         hit.hitGeom = this;
-        glMatrix.vec4.scaleAndAdd(hit.modelHitPoint, rayT.origin, rayT.direction, t_0);
-        glMatrix.vec4.scaleAndAdd(hit.hitPoint, rayT.origin, rayT.direction, t_0);
+        glMatrix.vec4.copy(hit.modelHitPoint, plane_intxn);
+        glMatrix.vec4.scaleAndAdd(hit.hitPoint, inRay.origin, inRay.direction, t_0);
         glMatrix.vec4.negate(hit.viewNormal, inRay.direction);
         glMatrix.vec4.normalize(hit.viewNormal, hit.viewNormal);
         glMatrix.vec4.transformMat4(hit.surfaceNormal, glMatrix.vec4.fromValues(0, 0, 1, 0), this.normal_to_world);

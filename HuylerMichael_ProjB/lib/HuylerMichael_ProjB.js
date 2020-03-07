@@ -86,14 +86,12 @@ function main() {
  * Initializes all of the VBOBoxes.
  */
 function initVBOBoxes() {
-  // Ground plane
+  // WebGL preview(s)
   id = 0;
   const vertex_shader_0 = `
     precision highp float;
 
-    uniform mat4 u_model_matrix_${id};
-    uniform mat4 u_view_matrix_${id};
-    uniform mat4 u_projection_matrix_${id};
+    uniform mat4 u_mvp_matrix_${id};
 
     attribute vec4 a_position_${id};
     attribute vec3 a_color_${id};
@@ -101,7 +99,7 @@ function initVBOBoxes() {
     varying vec4 v_color_${id};
 
     void main() {
-  		gl_Position = u_projection_matrix_${id} * u_view_matrix_${id} * u_model_matrix_${id} * a_position_${id};
+  		gl_Position = u_mvp_matrix_${id} * a_position_${id};
   		v_color_${id} = vec4(a_color_${id}, 1.0);
     }
   `;
@@ -114,45 +112,11 @@ function initVBOBoxes() {
       gl_FragColor = v_color_${id};
     }
   `;
-  const xcount = 10;
-  const ycount = 10;
-  const xymax = 5.0;
-  var v = 0;
-  var j = 0;
-  const verts = new Float32Array(7 * 2 * (xcount + ycount));
-  const xgap = xymax / (xcount - 1);
-  const ygap = xymax / (ycount - 1);
-  for (v = 0, j = 0; v < 2 * xcount; v++, j += 7) {
-    if (v % 2 == 0) {
-      verts[j] = -xymax + v * xgap;
-      verts[j + 1] = -xymax;
-      verts[j + 2] = 0.0;
-      verts[j + 3] = 1.0;
-    } else {
-      verts[j] = -xymax + (v - 1) * xgap;
-      verts[j + 1] = xymax;
-      verts[j + 2] = 0.0;
-      verts[j + 3] = 1.0;
-    }
-  }
-  for (v = 0; v < 2 * ycount; v++, j += 7) {
-    if (v % 2 == 0) {
-      verts[j] = -xymax;
-      verts[j + 1] = -xymax + v * ygap;
-      verts[j + 2] = 0.0;
-      verts[j + 3] = 1.0;
-    } else {
-      verts[j] = xymax;
-      verts[j + 1] = -xymax + (v - 1) * ygap;
-      verts[j + 2] = 0.0;
-      verts[j + 3] = 1.0;
-    }
-  }
-  for (var i = 0; i < verts.length; i += 7) {
-    verts[i + 4] = 80.0 / 255;
-    verts[i + 5] = 80.0 / 255;
-    verts[i + 6] = 80.0 / 255;
-  }
+  const verts = Float32Array.from([
+    ...appendGrid(),
+    ...appendDisc(2),
+    ...appendDisc(2),
+  ]);
   vbo_0 = new VBOBox(
     vertex_shader_0,
     fragment_shader_0,
@@ -170,17 +134,13 @@ function initVBOBoxes() {
   // Raycast produced image
   id = 1;
   const vertex_shader_1 = `
-    uniform mat4 u_model_matrix_${id};
-    uniform mat4 u_view_matrix_${id};
-    uniform mat4 u_projection_matrix_${id};
+    uniform mat4 u_mvp_matrix_${id};
     attribute vec4 a_position_${id};
     attribute vec2 a_texture_coord_${id};
     varying vec2 v_texture_coord_${id};
 
     void main() {
-      u_model_matrix_${id};
-      u_view_matrix_${id};
-      u_projection_matrix_${id};
+      u_mvp_matrix_${id};
 
       gl_Position = a_position_${id};
       v_texture_coord_${id} = a_texture_coord_${id};
@@ -216,6 +176,99 @@ function initVBOBoxes() {
       gl.uniform1i(this.u_sampler_location, 0);
     });
   vbo_ray.init();
+}
+
+function appendGrid() {
+  const xcount = 11;
+  const ycount = 11;
+  const verts = new Float32Array(7 * 2 * (xcount + ycount));
+  const xymax = 5.0;
+  var v = 0;
+  var j = 0;
+  const xgap = xymax / (xcount - 1);
+  const ygap = xymax / (ycount - 1);
+  for (v = 0, j = 0; v < 2 * xcount; v++, j += 7) {
+    if (v % 2 == 0) {
+      verts[j] = -xymax + v * xgap;
+      verts[j + 1] = -xymax;
+      verts[j + 2] = 0.0;
+      verts[j + 3] = 1.0;
+    } else {
+      verts[j] = -xymax + (v - 1) * xgap;
+      verts[j + 1] = xymax;
+      verts[j + 2] = 0.0;
+      verts[j + 3] = 1.0;
+    }
+  }
+  for (v = 0; v < 2 * ycount; v++, j += 7) {
+    if (v % 2 == 0) {
+      verts[j] = -xymax;
+      verts[j + 1] = -xymax + v * ygap;
+      verts[j + 2] = 0.0;
+      verts[j + 3] = 1.0;
+    } else {
+      verts[j] = xymax;
+      verts[j + 1] = -xymax + (v - 1) * ygap;
+      verts[j + 2] = 0.0;
+      verts[j + 3] = 1.0;
+    }
+  }
+  for (var i = 0; i < verts.length; i += 7) {
+    verts[i + 4] = 80.0 / 255;
+    verts[i + 5] = 80.0 / 255;
+    verts[i + 6] = 80.0 / 255;
+  }
+  return verts;
+}
+
+function appendDisc(radius = 2) {
+  const xcount = radius * 5 + 1;
+  const ycount = radius * 5 + 1;
+  const verts = new Float32Array(7 * 2 * (xcount + ycount));
+  const xgap = 2 * radius / (xcount - 2);
+  const ygap = 2 * radius / (ycount - 2);
+  var line = 0;
+  for (var i = 0; i < xcount; i++, line++) {
+    var x = -radius + (i + 0.5) * xgap;
+    var diff = Math.sqrt(radius * radius - x * x);
+    verts[(line * 7 * 2) + 0] = x;
+    verts[(line * 7 * 2) + 1] = -diff;
+    verts[(line * 7 * 2) + 2] = 0;
+    verts[(line * 7 * 2) + 3] = 1;
+    verts[(line * 7 * 2) + 4] = Math.random();
+    verts[(line * 7 * 2) + 5] = Math.random();
+    verts[(line * 7 * 2) + 6] = Math.random();
+    verts[(line * 7 * 2) + 7] = x;
+    verts[(line * 7 * 2) + 8] = diff;
+    verts[(line * 7 * 2) + 9] = 0;
+    verts[(line * 7 * 2) + 10] = 1;
+    verts[(line * 7 * 2) + 11] = Math.random();
+    verts[(line * 7 * 2) + 12] = Math.random();
+    verts[(line * 7 * 2) + 13] = Math.random();
+  }
+  for (i = 0; i < ycount; i++, line++) {
+    var y = -radius + (i + 0.5) * ygap;
+    var diff = Math.sqrt(radius * radius - y * y);
+    verts[(line * 7 * 2) + 0] = -diff;
+    verts[(line * 7 * 2) + 1] = y;
+    verts[(line * 7 * 2) + 2] = 0;
+    verts[(line * 7 * 2) + 3] = 1;
+    verts[(line * 7 * 2) + 4] = Math.random();
+    verts[(line * 7 * 2) + 5] = Math.random();
+    verts[(line * 7 * 2) + 6] = Math.random();
+    verts[(line * 7 * 2) + 7] = diff;
+    verts[(line * 7 * 2) + 8] = y;
+    verts[(line * 7 * 2) + 9] = 0;
+    verts[(line * 7 * 2) + 10] = 1;
+    verts[(line * 7 * 2) + 11] = Math.random();
+    verts[(line * 7 * 2) + 12] = Math.random();
+    verts[(line * 7 * 2) + 13] = Math.random();
+  }
+  return verts;
+}
+
+function appendSphere() {
+
 }
 
 /**

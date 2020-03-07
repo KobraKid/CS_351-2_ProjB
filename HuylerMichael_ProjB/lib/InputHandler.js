@@ -36,7 +36,7 @@ function keyDown(kev) {
       break;
     case "KeyT":
     case "84":
-      g_scene.traceImage();
+      do_raytracing();
       break;
     case "Period":
     case "86":

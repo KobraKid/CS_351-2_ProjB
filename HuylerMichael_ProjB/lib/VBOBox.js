@@ -58,18 +58,24 @@ class VBOBox {
     }
 
     /* Uniform variables and locations */
-    this._model_matrix = glMatrix.mat4.create();
-    this.u_model_matrix_loc;
-    this._view_matrix = glMatrix.mat4.create();
-    this.u_view_matrix_loc;
-    this._projection_matrix = glMatrix.mat4.create();
-    this.u_projection_matrix_loc;
+    this._mvp_matrix = glMatrix.mat4.create();
+    this.u_mvp_matrix_loc;
 
     /* VBOBox index */
     this.box_num = box_num;
 
     /* Adjust function */
     this.custom_adjust = adjust_function;
+
+    /* Individual M, V, P matricies */
+    this._model_matrix = glMatrix.mat4.create();
+    this._view_matrix = glMatrix.mat4.create();
+    this._projection_matrix = glMatrix.mat4.create();
+
+    /* Vertex counts */
+    this.c_grid_vertex = 44;
+    this.c_disc_vertex = 44;
+    this.c_sphere_vertex = 0;
   }
 
   get index() {
@@ -140,27 +146,11 @@ class VBOBox {
     });
 
     // Set up uniforms
-    this.u_model_matrix_loc =
-      gl.getUniformLocation(this.shader_loc, 'u_model_matrix_' + this.box_num);
-    if (!this.u_model_matrix_loc) {
+    this.u_mvp_matrix_loc =
+      gl.getUniformLocation(this.shader_loc, 'u_mvp_matrix_' + this.box_num);
+    if (!this.u_mvp_matrix_loc) {
       console.log(this.constructor.name +
-        '.init() failed to get GPU location for u_model_matrix_' + this.box_num + ' uniform');
-      return;
-    }
-
-    this.u_view_matrix_loc =
-      gl.getUniformLocation(this.shader_loc, 'u_view_matrix_' + this.box_num);
-    if (!this.u_view_matrix_loc) {
-      console.log(this.constructor.name +
-        '.init() failed to get GPU location for u_view_matrix_' + this.box_num + ' uniform');
-      return;
-    }
-
-    this.u_projection_matrix_loc =
-      gl.getUniformLocation(this.shader_loc, 'u_projection_matrix_' + this.box_num);
-    if (!this.u_projection_matrix_loc) {
-      console.log(this.constructor.name +
-        '.init() failed to get GPU location for u_projection_matrix_' + this.box_num + ' uniform');
+        '.init() failed to get GPU location for u_mvp_matrix_' + this.box_num + ' uniform');
       return;
     }
 
@@ -231,10 +221,8 @@ class VBOBox {
     this.custom_adjust();
     glMatrix.mat4.perspective(this.projection_matrix, glMatrix.glMatrix.toRadian(tracker.camera.fovy), tracker.camera.aspect, tracker.camera.near, tracker.camera.far);
     glMatrix.mat4.lookAt(this.view_matrix, tracker.camera.eye_point, tracker.camera.aim_point, tracker.camera.up_vector);
-    glMatrix.mat4.identity(this.model_matrix);
-    gl.uniformMatrix4fv(this.u_model_matrix_loc, false, this.model_matrix);
-    gl.uniformMatrix4fv(this.u_view_matrix_loc, false, this.view_matrix);
-    gl.uniformMatrix4fv(this.u_projection_matrix_loc, false, this.projection_matrix);
+    // glMatrix.mat4.identity(this.model_matrix);
+    glMatrix.mat4.multiply(this._mvp_matrix, this.projection_matrix, this.view_matrix);
   }
 
   /**
@@ -245,7 +233,47 @@ class VBOBox {
     if (!this.validate()) {
       console.log('ERROR: Before .draw() you need to call .enable()');
     }
-    gl.drawArrays(this.draw_method, 0, this.vertex_count);
+    if (this.box_num == 1) {
+      gl.drawArrays(this.draw_method, 0, this.vertex_count);
+      return;
+    }
+    var v_count = 0;
+    var temp;
+    // Grid
+    temp = glMatrix.mat4.create();
+    glMatrix.mat4.copy(temp, this._mvp_matrix);
+    gl.uniformMatrix4fv(this.u_mvp_matrix_loc, false, this._mvp_matrix);
+    gl.drawArrays(this.draw_method, v_count, this.c_grid_vertex);
+    v_count += this.c_grid_vertex;
+    this._mvp_matrix = temp;
+    // Disc 1
+    temp = glMatrix.mat4.create();
+    glMatrix.mat4.copy(temp, this._mvp_matrix);
+    glMatrix.mat4.translate(this._mvp_matrix, this._mvp_matrix, glMatrix.vec3.fromValues(1, 1, 1.3));
+    glMatrix.mat4.rotate(this._mvp_matrix, this._mvp_matrix, 0.25 * Math.PI, glMatrix.vec3.fromValues(1, 0, 0));
+    glMatrix.mat4.rotate(this._mvp_matrix, this._mvp_matrix, 0.25 * Math.PI, glMatrix.vec3.fromValues(0, 0, 1));
+    gl.uniformMatrix4fv(this.u_mvp_matrix_loc, false, this._mvp_matrix);
+    gl.drawArrays(this.draw_method, v_count, this.c_disc_vertex);
+    v_count += this.c_disc_vertex;
+    this._mvp_matrix = temp;
+    // Disc 2
+    temp = glMatrix.mat4.create();
+    glMatrix.mat4.copy(temp, this._mvp_matrix);
+    glMatrix.mat4.translate(this._mvp_matrix, this._mvp_matrix, glMatrix.vec3.fromValues(-1, 1, 1.3));
+    glMatrix.mat4.rotate(this._mvp_matrix, this._mvp_matrix, 0.75 * Math.PI, glMatrix.vec3.fromValues(1, 0, 0));
+    glMatrix.mat4.rotate(this._mvp_matrix, this._mvp_matrix, Math.PI / 3, glMatrix.vec3.fromValues(0, 0, 1));
+    gl.uniformMatrix4fv(this.u_mvp_matrix_loc, false, this._mvp_matrix);
+    gl.drawArrays(this.draw_method, v_count, this.c_disc_vertex);
+    v_count += this.c_disc_vertex;
+    this._mvp_matrix = temp;
+    // Sphere
+    temp = glMatrix.mat4.create();
+    glMatrix.mat4.copy(temp, this._mvp_matrix);
+    glMatrix.mat4.translate(this._mvp_matrix, this._mvp_matrix, glMatrix.vec3.fromValues(1.2, -1, 1));
+    gl.uniformMatrix4fv(this.u_mvp_matrix_loc, false, this._mvp_matrix);
+    gl.drawArrays(this.draw_method, v_count, this.c_sphere_vertex);
+    v_count += this.c_sphere_vertex;
+    this._mvp_matrix = temp;
   }
 
   /**

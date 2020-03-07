@@ -9,9 +9,13 @@
 
 var gui;
 var gui_open = true;
-var GuiTracker = function() {
+let GuiTracker = function() {
   this.pause = false;
   this.clear = true;
+  this.trace = function() {
+    do_raytracing();
+  };
+  this.progress = 0;
   /* FPS */
   this.fps = 60.0;
   this.ms = 1000.0 / 60.0; // timestep
@@ -28,7 +32,7 @@ var GuiTracker = function() {
     this.prev = now;
     this.ms = elapsed / this.speed;
     tracker.fps = 1000.0 / elapsed;
-  }
+  };
   /*
    * WebGL camera vars
    */
@@ -83,6 +87,8 @@ function initGui() {
     "4x4": 4,
   }).name('Antialiasing');
   gui.add(tracker, 'jitter').name('Jittering');
+  gui.add(tracker, 'trace').name('Trace!');
+  gui.add(tracker, 'progress', 0, 100, 1).name('Progress:').listen();
   gui.open();
   document.getElementsByClassName('close-bottom')[0].onclick = function() {
     gui_open = !gui_open;
@@ -107,4 +113,8 @@ function toggle_help() {
   help_visible = !help_visible;
   document.getElementById("help-menu-expanded").style.visibility = help_visible ? "visible" : "hidden";
   document.getElementById("help-menu").innerHTML = help_visible ? "Hide Help" : "Show Help";
+}
+
+async function do_raytracing() {
+  await g_scene.traceImage();
 }
