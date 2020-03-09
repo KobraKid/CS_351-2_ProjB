@@ -22,8 +22,7 @@ class Geometry {
         break;
       case GEOMETRIES.SPHERE:
         this.radius = 2.0;
-        this.lineColor = colors[0];
-        this.gapColor = colors[1];
+        this.color = colors[0];
         break;
       default:
         break;
@@ -57,18 +56,18 @@ class Geometry {
         var loc = hit.modelHitPoint[0] / this.xgap;
         if (hit.modelHitPoint[0] < 0) loc = -loc;
         if (loc % 1 < this.lineWidth) {
-          hit.hitNum = 1;
+          hit.hitNum = this.lineColor;
           return;
         }
         loc = hit.modelHitPoint[1] / this.ygap;
         if (hit.modelHitPoint[1] < 0) loc = -loc;
         if (loc % 1 < this.lineWidth) {
-          hit.hitNum = 1;
+          hit.hitNum = this.lineColor;
           return;
         }
 
         // otherwise this ray hit a gap
-        hit.hitNum = 0;
+        hit.hitNum = this.gapColor;
         break;
       case GEOMETRIES.DISC:
         // copy ray and transform
@@ -104,18 +103,18 @@ class Geometry {
         var loc = hit.modelHitPoint[0] / this.xgap;
         if (hit.modelHitPoint[0] < 0) loc = -loc;
         if (loc % 1 < this.lineWidth) {
-          hit.hitNum = 1;
+          hit.hitNum = this.lineColor;
           return;
         }
         loc = hit.modelHitPoint[1] / this.ygap;
         if (hit.modelHitPoint[1] < 0) loc = -loc;
         if (loc % 1 < this.lineWidth) {
-          hit.hitNum = 1;
+          hit.hitNum = this.lineColor;
           return;
         }
 
         // otherwise this ray hit a gap
-        hit.hitNum = 0;
+        hit.hitNum = this.gapColor;
         break;
       case GEOMETRIES.SPHERE:
         // copy ray and transform
@@ -149,7 +148,7 @@ class Geometry {
         glMatrix.vec4.normalize(hit.viewNormal, hit.viewNormal);
         glMatrix.vec4.transformMat4(hit.surfaceNormal, glMatrix.vec4.fromValues(0, 0, 1, 0), this.normal_to_world);
         glMatrix.vec4.normalize(hit.surfaceNormal, hit.surfaceNormal);
-        hit.hitNum = 1;
+        hit.hitNum = glMatrix.vec4.clone(hit.modelHitPoint);
         break;
       default:
         break;

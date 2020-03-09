@@ -14,7 +14,7 @@ var canvas;
 // Screen aspect ratio
 var aspect;
 
-var g_image = new ImageBuffer(256, 256);
+var g_image = new ImageBuffer(512, 512);
 var g_scene = new Scene();
 
 /* WebGL preview VBOs */
@@ -116,6 +116,7 @@ function initVBOBoxes() {
     ...appendGrid(),
     ...appendDisc(2),
     ...appendDisc(2),
+    ...appendSphere(),
   ]);
   vbo_0 = new VBOBox(
     vertex_shader_0,
@@ -267,8 +268,9 @@ function appendDisc(radius = 2) {
   return verts;
 }
 
-function appendSphere() {
-
+function appendSphere(radius = 1) {
+  const verts = [];
+  return verts;
 }
 
 /**

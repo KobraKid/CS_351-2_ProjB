@@ -41,11 +41,11 @@ class Scene {
     // Sphere
     this.geometries.add(new Geometry(GEOMETRIES.SPHERE,
       [
-        glMatrix.vec4.fromValues(0.2, 0.5, 0.9, 1.0),
-        glMatrix.vec4.fromValues(0.9, 0.9, 0.2, 1.0),
+        glMatrix.vec4.fromValues(0.2, 0.5, 0.9, 1.0)
       ]));
     this.geometries.get(3).setIdentity();
     this.geometries.get(3).rayTranslate(1.2, -1.3, 1);
+    this.geometries.get(3).rayRotate(0.75 * Math.PI, 1, 0, 0);
   }
 
   setImageBuffer(buffer) {
@@ -70,13 +70,7 @@ class Scene {
           for (var i = 0; i < this.geometries.size; i++) {
             this.geometries.get(i).trace(this.eye_ray, hit);
           }
-          if (hit.hitNum == 0) {
-            glMatrix.vec4.add(color, color, hit.hitGeom.gapColor);
-          } else if (hit.hitNum == 1) {
-            glMatrix.vec4.add(color, color, hit.hitGeom.lineColor);
-          } else {
-            glMatrix.vec4.add(color, color, this.sky_color);
-          }
+          glMatrix.vec4.add(color, color, hit.hitNum);
         }
         // average the colors of each supersample
         glMatrix.vec4.scale(color, color, 1 / (tracker.aa * tracker.aa));
