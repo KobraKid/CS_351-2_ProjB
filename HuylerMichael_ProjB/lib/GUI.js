@@ -16,6 +16,7 @@ let GuiTracker = function() {
     do_raytracing();
   };
   this.progress = 0;
+  this.resolution = 256;
   /* FPS */
   this.fps = 60.0;
   this.ms = 1000.0 / 60.0; // timestep
@@ -80,13 +81,22 @@ function initGui() {
   });
   gui.add(tracker, 'fps', 0, 60, 1).name('FPS').listen();
   gui.add(tracker, 'pause').name('Pause').listen();
-  gui.add(tracker, 'aa', {
+  gui.add(tracker, 'resolution', {
+    "64x64 px": 64,
+    "128x128 px": 128,
+    "256x256 px": 256,
+    "512x512 px": 512,
+    "1024x1024 px": 1024,
+  }).name('Resolution').onChange(value => g_scene.setImageBuffer(new ImageBuffer(value, value)));
+  var aa = gui.addFolder('Antialiasing');
+  aa.add(tracker, 'aa', {
     "1x1": 1,
     "2x2": 2,
     "3x3": 3,
     "4x4": 4,
-  }).name('Antialiasing');
-  gui.add(tracker, 'jitter').name('Jittering');
+  }).name('Supersampling');
+  aa.add(tracker, 'jitter').name('Jitter');
+  aa.open();
   gui.add(tracker, 'trace').name('Trace!');
   gui.add(tracker, 'progress', 0, 100, 1).name('Progress:').listen();
   gui.open();

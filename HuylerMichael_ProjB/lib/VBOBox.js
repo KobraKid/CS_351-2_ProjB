@@ -154,6 +154,7 @@ class VBOBox {
       return;
     }
 
+    // Set up texture for raytraced image
     if (this.box_num == 1) {
       this.u_texture_location = gl.createTexture();
       if (!this.u_texture_location) {
@@ -171,7 +172,7 @@ class VBOBox {
 
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, this.u_texture_location);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, g_image.width, g_image.height, 0, gl.RGB, gl.UNSIGNED_BYTE, g_image.iBuf);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, g_scene.buffer.width, g_scene.buffer.height, 0, gl.RGB, gl.UNSIGNED_BYTE, g_scene.buffer.iBuf);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     }
   }
@@ -292,8 +293,6 @@ class VBOBox {
   }
 
   reloadTexture() {
-    // gl.useProgram(this.shader_loc);
-    // gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo_loc);
-    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, g_image.width, g_image.height, gl.RGB, gl.UNSIGNED_BYTE, g_image.iBuf);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, g_scene.buffer.width, g_scene.buffer.height, 0, gl.RGB, gl.UNSIGNED_BYTE, g_scene.buffer.iBuf);
   }
 }

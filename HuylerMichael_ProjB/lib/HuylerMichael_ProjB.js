@@ -13,9 +13,10 @@ var gl;
 var canvas;
 // Screen aspect ratio
 var aspect;
+var offset;
 
-var g_image = new ImageBuffer(512, 512);
-var g_scene = new Scene();
+// The global scene
+var g_scene;
 
 /* WebGL preview VBOs */
 var preview_vbos = []
@@ -30,9 +31,11 @@ var vbo_ray;
  */
 function main() {
   canvas = document.getElementById('webgl');
-  canvas.width = window.innerWidth;
+  canvas.width = window.innerHeight * 2;
   canvas.height = window.innerHeight;
   aspect = canvas.width / canvas.height;
+  g_scene = new Scene();
+  g_scene.setImageBuffer(new ImageBuffer(tracker.resolution, tracker.resolution));
 
   gl = canvas.getContext("webgl", {
     preserveDrawingBuffer: true

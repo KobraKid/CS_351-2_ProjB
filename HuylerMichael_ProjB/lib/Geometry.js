@@ -2,10 +2,17 @@ const GEOMETRIES = {
   GRID: 0,
   DISC: 1,
   SPHERE: 2,
+  CUBE: 3,
+  R_S_T_: 4,
 }
 
+// Minimum distance for a ray to count as a hit when ray-marching
+const EPSILON = 0.00001;
+// Maximum distance for a ray to count as a miss when ray-marching
+const MAX_MISS = 10000;
+
 class Geometry {
-  constructor(type, colors) {
+  constructor(type, colors, ...params) {
     this._type = type;
     this.world_to_model = glMatrix.mat4.create();
     this.normal_to_world = glMatrix.mat4.create();
@@ -22,7 +29,30 @@ class Geometry {
         break;
       case GEOMETRIES.SPHERE:
         this.radius = 2.0;
+        this.k_d = colors[0]; // diffuse color
+        this.dmin = (p) => {
+          return Math.sqrt(
+            Math.pow(p[0], 2) +
+            Math.pow(p[1], 2) +
+            Math.pow(p[2], 2)
+          ) - 1;
+        };
+        break;
+      case GEOMETRIES.CUBE:
         this.color = colors[0];
+        this.dmin = (p) => {
+          return Math.sqrt(
+            Math.pow(Math.max(0, Math.abs(p[0]) - 1), 2) +
+            Math.pow(Math.max(0, Math.abs(p[1]) - 1), 2) +
+            Math.pow(Math.max(0, Math.abs(p[2]) - 1), 2)
+          );
+        };
+        break;
+      case GEOMETRIES.R_S_T_:
+        this.color = colors[0];
+        this.dmin = (p) => {
+          return Math.pow(Math.abs(p[0]), params[0]) + Math.pow(Math.abs(p[1]), params[1]) + Math.pow(Math.abs(p[2]), params[2]) - 1;
+        };
         break;
       default:
         break;
@@ -56,18 +86,18 @@ class Geometry {
         var loc = hit.modelHitPoint[0] / this.xgap;
         if (hit.modelHitPoint[0] < 0) loc = -loc;
         if (loc % 1 < this.lineWidth) {
-          hit.hitNum = this.lineColor;
+          hit.hit_color = this.lineColor;
           return;
         }
         loc = hit.modelHitPoint[1] / this.ygap;
         if (hit.modelHitPoint[1] < 0) loc = -loc;
         if (loc % 1 < this.lineWidth) {
-          hit.hitNum = this.lineColor;
+          hit.hit_color = this.lineColor;
           return;
         }
 
         // otherwise this ray hit a gap
-        hit.hitNum = this.gapColor;
+        hit.hit_color = this.gapColor;
         break;
       case GEOMETRIES.DISC:
         // copy ray and transform
@@ -103,18 +133,18 @@ class Geometry {
         var loc = hit.modelHitPoint[0] / this.xgap;
         if (hit.modelHitPoint[0] < 0) loc = -loc;
         if (loc % 1 < this.lineWidth) {
-          hit.hitNum = this.lineColor;
+          hit.hit_color = this.lineColor;
           return;
         }
         loc = hit.modelHitPoint[1] / this.ygap;
         if (hit.modelHitPoint[1] < 0) loc = -loc;
         if (loc % 1 < this.lineWidth) {
-          hit.hitNum = this.lineColor;
+          hit.hit_color = this.lineColor;
           return;
         }
 
         // otherwise this ray hit a gap
-        hit.hitNum = this.gapColor;
+        hit.hit_color = this.gapColor;
         break;
       case GEOMETRIES.SPHERE:
         // copy ray and transform
@@ -122,25 +152,33 @@ class Geometry {
         glMatrix.vec4.transformMat4(rayT.origin, inRay.origin, this.world_to_model);
         glMatrix.vec4.transformMat4(rayT.direction, inRay.direction, this.world_to_model);
 
+        // ray to sphere center
         var r2s = glMatrix.vec4.create();
         glMatrix.vec4.subtract(r2s, glMatrix.vec4.fromValues(0, 0, 0, 1), rayT.origin);
+        // |r2s|^2
         var L2 = glMatrix.vec3.dot(r2s, r2s);
         if (L2 <= 1.0) return; // inside sphere
 
+        // tca (origin to chord midpoint) (scaled)
         var tcaS = glMatrix.vec3.dot(rayT.direction, r2s);
         if (tcaS < 0.0) return; // missed, behind camera
 
+        // direction^2
         var DL2 = glMatrix.vec3.dot(rayT.direction, rayT.direction);
+        // tca^2 (not scaled)
         var tca2 = tcaS * tcaS / DL2;
-
+        // (sphere center to chord midpoint)^2
         var LM2 = L2 - tca2;
         if (LM2 > 1.0) return; // missed, outside of sphere
 
-        var L2hc = (1.0 - LM2);
-        var t0hit = tcaS/DL2 - Math.sqrt(L2hc/DL2);
-        if (t0hit > hit.t_0) return; // farther than some previous hit
+        if (inRay.shadow) return; // by now, we know the ray hit the sphere at some point
 
-        hit.t_0 = t0hit;
+        // (half-chord length)^2
+        var Lhc2 = (1.0 - LM2);
+        var t_0 = tcaS / DL2 - Math.sqrt(Lhc2 / DL2);
+        if (t_0 > hit.t_0) return; // farther than some previous hit
+
+        hit.t_0 = t_0;
         hit.hitGeom = this;
         glMatrix.vec4.scaleAndAdd(hit.modelHitPoint, rayT.origin, rayT.direction, hit.t_0);
         glMatrix.vec4.scaleAndAdd(hit.hitPoint, inRay.origin, inRay.direction, hit.t_0);
@@ -148,7 +186,43 @@ class Geometry {
         glMatrix.vec4.normalize(hit.viewNormal, hit.viewNormal);
         glMatrix.vec4.transformMat4(hit.surfaceNormal, glMatrix.vec4.fromValues(0, 0, 1, 0), this.normal_to_world);
         glMatrix.vec4.normalize(hit.surfaceNormal, hit.surfaceNormal);
-        hit.hitNum = glMatrix.vec4.clone(hit.modelHitPoint);
+        hit.hit_color = this.k_d;
+        // grayscale
+        // hit.hit_color = glMatrix.vec4.fromValues(hit.modelHitPoint[2] + 0.5, hit.modelHitPoint[2] + 0.5, hit.modelHitPoint[2] + 0.5, 1);
+        // rainbow
+        // hit.hit_color = glMatrix.vec4.clone(hit.modelHitPoint);
+        break;
+        // Any 'ray marching' shapes
+      case GEOMETRIES.CUBE:
+      case GEOMETRIES.R_S_T_:
+        // copy ray and transform
+        var rayT = new Ray();
+        glMatrix.vec4.transformMat4(rayT.origin, inRay.origin, this.world_to_model);
+        glMatrix.vec4.transformMat4(rayT.direction, inRay.direction, this.world_to_model);
+
+        // create a point p that will march toward a surface
+        var p = glMatrix.vec4.clone(rayT.origin);
+        var march = 0;
+        var t_0 = 0;
+        do {
+          glMatrix.vec4.scaleAndAdd(p, p, rayT.direction, march);
+          march = this.dmin(p);
+          t_0 += march;
+        } while (march > EPSILON && march < MAX_MISS);
+
+        if (this.dmin(p) > MAX_MISS) return; // too big, missed
+
+        if (t_0 > hit.t_0) return; // farther than some previous hit
+
+        hit.t_0 = t_0;
+        hit.hitGeom = this;
+        glMatrix.vec4.scaleAndAdd(hit.modelHitPoint, rayT.origin, rayT.direction, hit.t_0);
+        glMatrix.vec4.scaleAndAdd(hit.hitPoint, inRay.origin, inRay.direction, hit.t_0);
+        glMatrix.vec4.negate(hit.viewNormal, inRay.direction);
+        glMatrix.vec4.normalize(hit.viewNormal, hit.viewNormal);
+        glMatrix.vec4.transformMat4(hit.surfaceNormal, glMatrix.vec4.fromValues(0, 0, 1, 0), this.normal_to_world);
+        glMatrix.vec4.normalize(hit.surfaceNormal, hit.surfaceNormal);
+        hit.hit_color = this.color; // glMatrix.vec4.clone(hit.modelHitPoint);
         break;
       default:
         break;

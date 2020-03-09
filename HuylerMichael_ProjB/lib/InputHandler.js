@@ -190,8 +190,7 @@ function mouseToCVV(ev) {
  * current rendering context according to the new canvas size and aspect ratio.
  */
 function drawResize() {
-  canvas.width = window.innerWidth;
+  canvas.width = window.innerHeight * 2;
   canvas.height = window.innerHeight;
   aspect = canvas.width / canvas.height;
-  gl.viewport(0, 0, canvas.width, canvas.height);
 }
