@@ -25,7 +25,6 @@ class Geometry {
         break;
       case GEOMETRIES.SPHERE:
         this.radius = 2.0;
-        this.k_d = colors[0]; // diffuse color
         this.dmin = (p) => {
           return Math.sqrt(
             Math.pow(p[0], 2) +
@@ -247,8 +246,44 @@ class Geometry {
         var L = glMatrix.vec4.create();
         glMatrix.vec4.subtract(L, light_pos, hit.modelHitPoint);
         glMatrix.vec4.normalize(L, L);
+        var n_dot_l = glMatrix.vec4.dot(N, L);
+        var V = glMatrix.vec4.clone(hit.viewNormal);
+        var C = glMatrix.vec4.create();
+        glMatrix.vec4.scale(C, N, n_dot_l);
+        var R = glMatrix.vec4.create();
+        glMatrix.vec4.scale(R, C, 2);
+        glMatrix.vec4.subtract(R, R, L);
+
         var color = glMatrix.vec4.create();
-        glMatrix.vec4.scale(color, this.k_d, glMatrix.vec4.dot(N, L));
+        glMatrix.vec4.zero(color);
+        var attenuation = 1; // default
+        // Emissive
+        glMatrix.vec4.add(color, color,
+          this._mat._k_e);
+        // Ambient illumination * ambient reflectance
+        glMatrix.vec4.add(color, color,
+          glMatrix.vec4.multiply(
+            glMatrix.vec4.create(),
+            this._mat._i_a,
+            this._mat._k_a));
+        // Duffuse illumination * diffuse reflectance
+        glMatrix.vec4.scaleAndAdd(color, color,
+          glMatrix.vec4.multiply(
+            glMatrix.vec4.create(),
+            this._mat._i_d,
+            this._mat._k_d),
+          Math.max(0, n_dot_l) * attenuation);
+        // Specular illumination * specular reflectance
+        glMatrix.vec4.scaleAndAdd(color, color,
+          glMatrix.vec4.multiply(
+            glMatrix.vec4.create(),
+            this._mat._i_s,
+            this._mat._k_s),
+          Math.pow(
+            Math.max(
+              0,
+              glMatrix.vec4.dot(R, V)),
+            this._mat._se) * attenuation);
         hit.hit_color = color;
         break;
       default:
