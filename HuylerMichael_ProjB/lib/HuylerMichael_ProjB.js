@@ -26,6 +26,11 @@ var vbo_0;
 /* Raytrace VBO */
 var vbo_ray;
 
+// Minimum distance for a ray to count as a hit when ray-marching
+const EPSILON = 0.00001;
+// Maximum distance for a ray to count as a miss when ray-marching
+const MAX_MISS = 10000;
+
 /**
  * Initialize global variables, event listeners, etc.
  */
@@ -34,7 +39,7 @@ function main() {
   canvas.width = window.innerHeight * 2;
   canvas.height = window.innerHeight;
   aspect = canvas.width / canvas.height;
-  g_scene = new Scene();
+  g_scene = new Scene(2);
   g_scene.setImageBuffer(new ImageBuffer(tracker.resolution, tracker.resolution));
 
   gl = canvas.getContext("webgl", {

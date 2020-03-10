@@ -6,14 +6,10 @@ const GEOMETRIES = {
   R_S_T_: 4,
 }
 
-// Minimum distance for a ray to count as a hit when ray-marching
-const EPSILON = 0.00001;
-// Maximum distance for a ray to count as a miss when ray-marching
-const MAX_MISS = 10000;
-
 class Geometry {
-  constructor(type, colors, ...params) {
+  constructor(type, colors, material, ...params) {
     this._type = type;
+    this._mat = material;
     this.world_to_model = glMatrix.mat4.create();
     this.normal_to_world = glMatrix.mat4.create();
     switch (this._type) {
@@ -59,8 +55,18 @@ class Geometry {
     }
   }
 
+  get type() {
+    return this._type;
+  }
+
+  /**
+   * Traces a ray to determine the intersection point (if it exists).
+   *
+   * @param {!Ray} inRay The ray (in world coordinates) used to test intersections.
+   * @param {!Hit} hit Holds the results of the traced intersection, if any.
+   */
   trace(inRay, hit) {
-    switch (this._type) {
+    switch (this.type) {
       case GEOMETRIES.GRID:
         // copy ray and transform
         var rayT = new Ray();
@@ -75,29 +81,13 @@ class Geometry {
           return;
 
         hit.t_0 = t_0;
-        hit.hitGeom = this;
+        hit.hit_geometry = this;
+        if (inRay.shadow) return;
         glMatrix.vec4.scaleAndAdd(hit.modelHitPoint, rayT.origin, rayT.direction, t_0);
         glMatrix.vec4.scaleAndAdd(hit.hitPoint, rayT.origin, rayT.direction, t_0);
         glMatrix.vec4.negate(hit.viewNormal, inRay.direction);
         glMatrix.vec4.normalize(hit.viewNormal, hit.viewNormal);
-        glMatrix.vec4.set(hit.surfaceNormal, 0, 0, 1, 0);
-
-        // if the following conditionals are met, this ray hit a line
-        var loc = hit.modelHitPoint[0] / this.xgap;
-        if (hit.modelHitPoint[0] < 0) loc = -loc;
-        if (loc % 1 < this.lineWidth) {
-          hit.hit_color = this.lineColor;
-          return;
-        }
-        loc = hit.modelHitPoint[1] / this.ygap;
-        if (hit.modelHitPoint[1] < 0) loc = -loc;
-        if (loc % 1 < this.lineWidth) {
-          hit.hit_color = this.lineColor;
-          return;
-        }
-
-        // otherwise this ray hit a gap
-        hit.hit_color = this.gapColor;
+        glMatrix.vec4.copy(hit.surfaceNormal, hit.modelHitPoint);
         break;
       case GEOMETRIES.DISC:
         // copy ray and transform
@@ -121,30 +111,14 @@ class Geometry {
           return;
 
         hit.t_0 = t_0;
-        hit.hitGeom = this;
+        hit.hit_geometry = this;
+        if (inRay.shadow) return;
         glMatrix.vec4.copy(hit.modelHitPoint, plane_intxn);
         glMatrix.vec4.scaleAndAdd(hit.hitPoint, inRay.origin, inRay.direction, t_0);
         glMatrix.vec4.negate(hit.viewNormal, inRay.direction);
         glMatrix.vec4.normalize(hit.viewNormal, hit.viewNormal);
         glMatrix.vec4.transformMat4(hit.surfaceNormal, glMatrix.vec4.fromValues(0, 0, 1, 0), this.normal_to_world);
         glMatrix.vec4.normalize(hit.surfaceNormal, hit.surfaceNormal);
-
-        // if the following conditionals are met, this ray hit a line
-        var loc = hit.modelHitPoint[0] / this.xgap;
-        if (hit.modelHitPoint[0] < 0) loc = -loc;
-        if (loc % 1 < this.lineWidth) {
-          hit.hit_color = this.lineColor;
-          return;
-        }
-        loc = hit.modelHitPoint[1] / this.ygap;
-        if (hit.modelHitPoint[1] < 0) loc = -loc;
-        if (loc % 1 < this.lineWidth) {
-          hit.hit_color = this.lineColor;
-          return;
-        }
-
-        // otherwise this ray hit a gap
-        hit.hit_color = this.gapColor;
         break;
       case GEOMETRIES.SPHERE:
         // copy ray and transform
@@ -171,7 +145,11 @@ class Geometry {
         var LM2 = L2 - tca2;
         if (LM2 > 1.0) return; // missed, outside of sphere
 
-        if (inRay.shadow) return; // by now, we know the ray hit the sphere at some point
+        // by now, we know the ray hit the sphere at some point
+        if (inRay.shadow) {
+          hit.hit_geometry = this;
+          return;
+        }
 
         // (half-chord length)^2
         var Lhc2 = (1.0 - LM2);
@@ -179,18 +157,13 @@ class Geometry {
         if (t_0 > hit.t_0) return; // farther than some previous hit
 
         hit.t_0 = t_0;
-        hit.hitGeom = this;
+        hit.hit_geometry = this;
         glMatrix.vec4.scaleAndAdd(hit.modelHitPoint, rayT.origin, rayT.direction, hit.t_0);
         glMatrix.vec4.scaleAndAdd(hit.hitPoint, inRay.origin, inRay.direction, hit.t_0);
         glMatrix.vec4.negate(hit.viewNormal, inRay.direction);
         glMatrix.vec4.normalize(hit.viewNormal, hit.viewNormal);
         glMatrix.vec4.transformMat4(hit.surfaceNormal, glMatrix.vec4.fromValues(0, 0, 1, 0), this.normal_to_world);
         glMatrix.vec4.normalize(hit.surfaceNormal, hit.surfaceNormal);
-        hit.hit_color = this.k_d;
-        // grayscale
-        // hit.hit_color = glMatrix.vec4.fromValues(hit.modelHitPoint[2] + 0.5, hit.modelHitPoint[2] + 0.5, hit.modelHitPoint[2] + 0.5, 1);
-        // rainbow
-        // hit.hit_color = glMatrix.vec4.clone(hit.modelHitPoint);
         break;
         // Any 'ray marching' shapes
       case GEOMETRIES.CUBE:
@@ -215,16 +188,71 @@ class Geometry {
         if (t_0 > hit.t_0) return; // farther than some previous hit
 
         hit.t_0 = t_0;
-        hit.hitGeom = this;
+        hit.hit_geometry = this;
+        if (inRay.shadow) return;
         glMatrix.vec4.scaleAndAdd(hit.modelHitPoint, rayT.origin, rayT.direction, hit.t_0);
         glMatrix.vec4.scaleAndAdd(hit.hitPoint, inRay.origin, inRay.direction, hit.t_0);
         glMatrix.vec4.negate(hit.viewNormal, inRay.direction);
         glMatrix.vec4.normalize(hit.viewNormal, hit.viewNormal);
         glMatrix.vec4.transformMat4(hit.surfaceNormal, glMatrix.vec4.fromValues(0, 0, 1, 0), this.normal_to_world);
         glMatrix.vec4.normalize(hit.surfaceNormal, hit.surfaceNormal);
-        hit.hit_color = this.color; // glMatrix.vec4.clone(hit.modelHitPoint);
         break;
       default:
+        break;
+    }
+  }
+
+  /**
+   * Computes the shade of this object at a given hit point.
+   *
+   * @param {!Hit} hit The hit point where the shading is being done.
+   */
+  shade(hit) {
+    switch (this.type) {
+      case GEOMETRIES.GRID:
+      case GEOMETRIES.DISC:
+        // if the following conditionals are met, this ray hit a line
+        var loc = hit.modelHitPoint[0] / this.xgap;
+        if (hit.modelHitPoint[0] < 0) loc = -loc;
+        if (loc % 1 < this.lineWidth) {
+          hit.hit_color = this.lineColor;
+          return;
+        }
+        loc = hit.modelHitPoint[1] / this.ygap;
+        if (hit.modelHitPoint[1] < 0) loc = -loc;
+        if (loc % 1 < this.lineWidth) {
+          hit.hit_color = this.lineColor;
+          return;
+        }
+
+        // otherwise this ray hit a gap
+        hit.hit_color = this.gapColor;
+        break;
+      case GEOMETRIES.SPHERE:
+        var light_pos = glMatrix.vec4.fromValues(
+          g_scene.lights.get(0).position[0],
+          g_scene.lights.get(0).position[1],
+          g_scene.lights.get(0).position[2],
+          0);
+
+        glMatrix.vec4.transformMat4(light_pos, light_pos, this.world_to_model);
+
+        var N = glMatrix.vec4.fromValues(
+          hit.modelHitPoint[0],
+          hit.modelHitPoint[1],
+          hit.modelHitPoint[2],
+          0
+        );
+        glMatrix.vec4.normalize(N, N);
+        var L = glMatrix.vec4.create();
+        glMatrix.vec4.subtract(L, light_pos, hit.modelHitPoint);
+        glMatrix.vec4.normalize(L, L);
+        var color = glMatrix.vec4.create();
+        glMatrix.vec4.scale(color, this.k_d, glMatrix.vec4.dot(N, L));
+        hit.hit_color = color;
+        break;
+      default:
+        hit.hit_color = this.color;
         break;
     }
   }
@@ -313,4 +341,8 @@ class GeometryList {
     return this._geom[i];
   }
 
+}
+
+function clamp(value, min, max) {
+  return (value < min ? min : (value > max ? max : value));
 }
