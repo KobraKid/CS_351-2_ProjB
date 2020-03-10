@@ -75,7 +75,7 @@ class VBOBox {
     /* Vertex counts */
     this.c_grid_vertex = 44;
     this.c_disc_vertex = 44;
-    this.c_sphere_vertex = 0;
+    this.c_sphere_vertex = 676;
   }
 
   get index() {
@@ -270,7 +270,7 @@ class VBOBox {
     // Sphere
     temp = glMatrix.mat4.create();
     glMatrix.mat4.copy(temp, this._mvp_matrix);
-    glMatrix.mat4.translate(this._mvp_matrix, this._mvp_matrix, glMatrix.vec3.fromValues(1.2, -1, 1));
+    glMatrix.mat4.translate(this._mvp_matrix, this._mvp_matrix, glMatrix.vec3.fromValues(0, -1, 1));
     gl.uniformMatrix4fv(this.u_mvp_matrix_loc, false, this._mvp_matrix);
     gl.drawArrays(this.draw_method, v_count, this.c_sphere_vertex);
     v_count += this.c_sphere_vertex;

@@ -14,19 +14,44 @@ class Scene {
     this.ray_camera.rayLookAt(tracker.camera.eye_point, tracker.camera.aim_point, tracker.camera.up_vector);
 
     // Grid
+    var i = 0;
     this.geometries.add(new Geometry(GEOMETRIES.GRID,
       [
         glMatrix.vec4.fromValues(0.2, 0.5, 0.2, 1),
         glMatrix.vec4.fromValues(0.9, 0.9, 0.9, 1),
       ], 0));
-    this.geometries.get(0).setIdentity();
+    this.geometries.get(i).setIdentity();
     // Sphere
+    i++;
     this.geometries.add(new Geometry(GEOMETRIES.SPHERE,
       [
         glMatrix.vec4.fromValues(0.2, 0.5, 0.9, 1)
       ], 0));
-    this.geometries.get(1).setIdentity();
-    this.geometries.get(1).rayTranslate(0, 0, 1);/*
+    this.geometries.get(i).setIdentity();
+    this.geometries.get(i).rayTranslate(0, -1, 1);
+    // Disc 1
+    i++;
+    this.geometries.add(new Geometry(GEOMETRIES.DISC,
+      [
+        glMatrix.vec4.fromValues(0.9, 0.9, 0.9, 1),
+        glMatrix.vec4.fromValues(0.2, 0.5, 0.2, 1),
+      ], 0));
+    this.geometries.get(i).setIdentity();
+    this.geometries.get(i).rayTranslate(1, 1, 1.3);
+    this.geometries.get(i).rayRotate(0.25 * Math.PI, 1, 0, 0);
+    this.geometries.get(i).rayRotate(0.25 * Math.PI, 0, 0, 1);
+    // Disc 2
+    i++;
+    this.geometries.add(new Geometry(GEOMETRIES.DISC,
+      [
+        glMatrix.vec4.fromValues(0.9, 0.5, 0.9, 1),
+        glMatrix.vec4.fromValues(0.2, 0.9, 0.2, 1),
+      ], 0));
+    this.geometries.get(i).setIdentity();
+    this.geometries.get(i).rayTranslate(-1, 1, 1.3);
+    this.geometries.get(i).rayRotate(0.75 * Math.PI, 1, 0, 0);
+    this.geometries.get(i).rayRotate(Math.PI / 3, 0, 0, 1);
+    /*
     // Ray-marched cube
     this.geometries.add(new Geometry(GEOMETRIES.SPHERE,
       [
@@ -36,26 +61,7 @@ class Scene {
     this.geometries.get(2).rayTranslate(0, 0, 4);
     this.geometries.get(2).rayRotate(0.75 * Math.PI, 0, 0, 1);
     this.geometries.get(2).rayRotate(0.25 * Math.PI, 1, 0, 0);
-    // Disc 1
-    this.geometries.add(new Geometry(GEOMETRIES.DISC,
-      [
-        glMatrix.vec4.fromValues(0.9, 0.9, 0.9, 1),
-        glMatrix.vec4.fromValues(0.2, 0.5, 0.2, 1),
-      ], 0));
-    this.geometries.get(3).setIdentity();
-    this.geometries.get(3).rayTranslate(1, 1, 1.3);
-    this.geometries.get(3).rayRotate(0.25 * Math.PI, 1, 0, 0);
-    this.geometries.get(3).rayRotate(0.25 * Math.PI, 0, 0, 1);
-    // Disc 2
-    this.geometries.add(new Geometry(GEOMETRIES.DISC,
-      [
-        glMatrix.vec4.fromValues(0.9, 0.5, 0.9, 1),
-        glMatrix.vec4.fromValues(0.2, 0.9, 0.2, 1),
-      ], 0));
-    this.geometries.get(4).setIdentity();
-    this.geometries.get(4).rayTranslate(-1, 1, 1.3);
-    this.geometries.get(4).rayRotate(0.75 * Math.PI, 1, 0, 0);
-    this.geometries.get(4).rayRotate(Math.PI / 3, 0, 0, 1);*/
+    */
 
     this.lights.add(new Light(glMatrix.vec4.fromValues(4, 0, 4, 1)));
   }
@@ -122,10 +128,12 @@ class Scene {
 
     hit.hit_geometry.shade(hit);
     var shadow_hit = new Hit();
-    glMatrix.vec4.scaleAndAdd(this.shadow_ray.origin, hit.hitPoint, this.eye_ray.direction, -1.0E-4);
+    glMatrix.vec4.scaleAndAdd(this.shadow_ray.origin, hit.hitPoint, this.eye_ray.direction, -1.0E-10);
     glMatrix.vec4.scaleAndAdd(this.shadow_ray.direction, this.lights.get(0).position, hit.hitPoint, -1);
     this.trace(this.shadow_ray, shadow_hit, color, depth - 1);
     if (shadow_hit.hit_geometry != null) {
+      // console.log(hit.hitPoint, this.shadow_ray.origin, hit.hit_geometry.type);
+      // console.log(this.lights.get(0).position, this.shadow_ray.direction, shadow_hit.hit_geometry.type);
       hit.hit_color = glMatrix.vec4.fromValues(0, 0, 0, 1);
     }
     // average color(s) from each subpixel

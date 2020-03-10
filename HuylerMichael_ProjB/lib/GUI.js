@@ -16,7 +16,7 @@ let GuiTracker = function() {
     do_raytracing();
   };
   this.progress = 0;
-  this.resolution = 256;
+  this.resolution = 32;
   /* FPS */
   this.fps = 60.0;
   this.ms = 1000.0 / 60.0; // timestep

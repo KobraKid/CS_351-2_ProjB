@@ -277,8 +277,69 @@ function appendDisc(radius = 2) {
 }
 
 function appendSphere(radius = 1) {
-  const verts = [];
-  return verts;
+  const NScount = 13;
+  const EWcount = 2 * NScount;
+  const vertCount = 2 * EWcount * NScount;
+  const vertSet = new Float32Array(vertCount * 7);
+  const EWbgnColr = glMatrix.vec4.fromValues(1.0, 0.5, 0.0, 1.0);
+  const EWendColr = glMatrix.vec4.fromValues(0.0, 0.5, 1.0, 1.0);
+  const NSbgnColr = glMatrix.vec4.fromValues(1.0, 1.0, 1.0, 1.0);
+  const NSendColr = glMatrix.vec4.fromValues(0.0, 1.0, 0.5, 1.0);
+  var EWcolrStep = glMatrix.vec4.create();
+  var NScolrStep = glMatrix.vec4.create();
+  glMatrix.vec4.subtract(EWcolrStep, EWendColr, EWbgnColr);
+  glMatrix.vec4.subtract(NScolrStep, NSendColr, NSbgnColr);
+  glMatrix.vec4.scale(EWcolrStep, EWcolrStep, 2.0 / (EWcount - 1));
+  glMatrix.vec4.scale(NScolrStep, NScolrStep, 1.0 / (NScount - 1));
+  var EWgap = 1.0 / (EWcount - 1);
+  var NSgap = 1.0 / (NScount - 1);
+  var EWint = 0;
+  var NSint = 0;
+  var v = 0;
+  var idx = 0;
+  var pos = glMatrix.vec4.create();
+  var colrNow = glMatrix.vec4.create();
+
+  for (NSint = 0; NSint < NScount; NSint++) {
+    colrNow = glMatrix.vec4.scaleAndAdd(colrNow, NSbgnColr, NScolrStep, NSint);
+    for (EWint = 0; EWint < EWcount; EWint++, v++, idx += 7) {
+      polar2xyz(pos, EWint * EWgap, NSint * NSgap);
+      vertSet[idx] = pos[0];
+      vertSet[idx + 1] = pos[1];
+      vertSet[idx + 2] = pos[2];
+      vertSet[idx + 3] = 1.0;
+      vertSet[idx + 4] = colrNow[0];
+      vertSet[idx + 5] = colrNow[1];
+      vertSet[idx + 6] = colrNow[2];
+    }
+  }
+
+  for (EWint = 0; EWint < EWcount; EWint++) {
+    if (EWint < EWcount / 2) {
+      colrNow = glMatrix.vec4.scaleAndAdd(colrNow, EWbgnColr, EWcolrStep, EWint);
+    } else {
+      colrNow = glMatrix.vec4.scaleAndAdd(colrNow, EWbgnColr, EWcolrStep, EWcount - EWint);
+    }
+    for (NSint = 0; NSint < NScount; NSint++, v++, idx += 7) {
+      polar2xyz(pos, EWint * EWgap, NSint * NSgap);
+      vertSet[idx] = pos[0];
+      vertSet[idx + 1] = pos[1];
+      vertSet[idx + 2] = pos[2];
+      vertSet[idx + 3] = 1.0;
+      vertSet[idx + 4] = colrNow[0];
+      vertSet[idx + 5] = colrNow[1];
+      vertSet[idx + 6] = colrNow[2];
+    }
+  }
+  return vertSet;
+}
+
+function polar2xyz(out4, fracEW, fracNS) {
+  var sEW = Math.sin(2.0 * Math.PI * fracEW);
+  var cEW = Math.cos(2.0 * Math.PI * fracEW);
+  var sNS = Math.sin(Math.PI * fracNS);
+  var cNS = Math.cos(Math.PI * fracNS);
+  glMatrix.vec4.set(out4, cEW * sNS, sEW * sNS, cNS, 1.0);
 }
 
 /**
