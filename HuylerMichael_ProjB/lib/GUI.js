@@ -17,6 +17,7 @@ let GuiTracker = function() {
   };
   this.progress = 0;
   this.resolution = 32;
+  this.depth = 2;
   /* FPS */
   this.fps = 60.0;
   this.ms = 1000.0 / 60.0; // timestep
@@ -88,6 +89,7 @@ function initGui() {
     "512x512 px": 512,
     "1024x1024 px": 1024,
   }).name('Resolution').onChange(value => g_scene.setImageBuffer(new ImageBuffer(value, value)));
+  gui.add(tracker, 'depth', 1, 4, 1).name('Depth').onChange(value => g_scene.max_depth = value);
   var aa = gui.addFolder('Antialiasing');
   aa.add(tracker, 'aa', {
     "1x1": 1,

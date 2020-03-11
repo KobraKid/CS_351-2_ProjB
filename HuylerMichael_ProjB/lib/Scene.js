@@ -116,8 +116,6 @@ class Scene {
   }
 
   shade(hit, color, depth) {
-    // break out of recursion if we hit the max recursion depth
-    if (depth <= 0) return;
 
     // if we hit nothing during tracing, then no need to recurse further
     if (hit.hit_geometry == null) {
@@ -134,7 +132,7 @@ class Scene {
     var shadow_hit = new Hit();
     glMatrix.vec4.scaleAndAdd(this.shadow_ray.origin, hit.hitPoint, this.eye_ray.direction, -1.0E-3);
     glMatrix.vec4.scaleAndAdd(this.shadow_ray.direction, this.lights.get(0).position, hit.hitPoint, -1);
-    this.trace(this.shadow_ray, shadow_hit, color, depth - 1);
+    this.trace(this.shadow_ray, shadow_hit, color);
 
     // we hit something closeer than the light source
     if (shadow_hit.hit_geometry != null && shadow_hit.t_0 <= glMatrix.vec4.dot(this.shadow_ray.direction, this.lights.get(0).position)) {
@@ -149,8 +147,8 @@ class Scene {
     Ray.reflect(this.reflection_ray.direction, hit.viewNormal, hit.surfaceNormal);
     this.trace(this.reflection_ray, reflection_hit);
 
-    if (reflection_hit.hit_geometry != null) {
-      this.shade(reflection_hit, color, depth - 1);
+    if (reflection_hit.hit_geometry != null && depth > 0) {
+      this.shade(reflection_hit, hit.hit_color, depth - 1);
     }
 
     // average color(s) from each subpixel

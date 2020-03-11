@@ -144,12 +144,6 @@ class Geometry {
         var LM2 = L2 - tca2;
         if (LM2 > 1.0) return; // missed, outside of sphere
 
-        // by now, we know the ray hit the sphere at some point
-        if (inRay.shadow) {
-          hit.hit_geometry = this;
-          return;
-        }
-
         // (half-chord length)^2
         var Lhc2 = (1.0 - LM2);
         var t_0 = tcaS / DL2 - Math.sqrt(Lhc2 / DL2);
@@ -157,6 +151,7 @@ class Geometry {
 
         hit.t_0 = t_0;
         hit.hit_geometry = this;
+        if (inRay.shadow) return;
         glMatrix.vec4.scaleAndAdd(hit.modelHitPoint, rayT.origin, rayT.direction, hit.t_0);
         glMatrix.vec4.scaleAndAdd(hit.hitPoint, inRay.origin, inRay.direction, hit.t_0);
         glMatrix.vec4.negate(hit.viewNormal, inRay.direction);
