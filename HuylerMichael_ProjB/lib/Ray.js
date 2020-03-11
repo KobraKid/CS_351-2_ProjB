@@ -20,4 +20,24 @@ class Ray {
     return this;
   }
 
+  /**
+   * Reflects in incident vector about a normal vector.
+   *
+   * @param {!vec4} R The reflection ray.
+   * @param {!vec4} L The incident/light ray.
+   * @param {!vec4} N The surface normal ray.
+   *
+   * @return {vec4} The reflection ray.
+   */
+  static reflect(R, L, N) {
+    // Reflection ray
+    glMatrix.vec4.zero(R);
+    // Lengthened surface normal
+    var C = glMatrix.vec4.create();
+    glMatrix.vec4.scale(C, N, glMatrix.vec4.dot(N, L));
+    glMatrix.vec4.scale(R, C, 2);
+    glMatrix.vec4.subtract(R, R, L);
+    return R;
+  }
+
 }

@@ -1,40 +1,232 @@
-class Material {
-  constructor(
-    ambient_illumination,
-    diffuse_illumination,
-    specular_illumination,
-    ambient_reflectance,
-    diffuse_reflectance,
-    specular_reflectance,
-    emissiveness,
-    specular_exponent) {
-    this._i_a = ambient_illumination;
-    this._i_d = diffuse_illumination;
-    this._i_s = specular_illumination;
-
-    this._k_a = ambient_reflectance;
-    this._k_d = diffuse_reflectance;
-    this._k_s = specular_reflectance;
-    this._k_e = emissiveness;
-
-    this._se = specular_exponent;
-  }
-}
-
-class MaterialList {
-  constructor() {
-    this._mat = [];
-  }
-
-  get size() {
-    return this._mat.length;
-  }
-
-  add(m) {
-    this._mat.push(m);
-  }
-
-  get(i) {
-    return this._mat[i];
+const MATERIALS = {
+  RED_PLASTIC: {
+    I_a: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_d: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_s: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    K_a: glMatrix.vec4.fromValues(0.1, 0.1, 0.1, 1),
+    K_d: glMatrix.vec4.fromValues(0.6, 0.0, 0.0, 1),
+    K_s: glMatrix.vec4.fromValues(0.6, 0.6, 0.6, 1),
+    K_e: glMatrix.vec4.fromValues(0.0, 0.0, 0.0, 1),
+    se: 100.0,
+  },
+  GREEN_PLASTIC: {
+    I_a: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_d: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_s: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    K_a: glMatrix.vec4.fromValues(0.05, 0.05, 0.05, 1),
+    K_d: glMatrix.vec4.fromValues(0.0, 0.6, 0.0, 1),
+    K_s: glMatrix.vec4.fromValues(0.2, 0.2, 0.2, 1),
+    K_e: glMatrix.vec4.fromValues(0.0, 0.0, 0.0, 1),
+    se: 60.0,
+  },
+  BLUE_PLASTIC: {
+    I_a: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_d: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_s: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    K_a: glMatrix.vec4.fromValues(0.05, 0.05, 0.05, 1),
+    K_d: glMatrix.vec4.fromValues(0.0, 0.2, 0.6, 1),
+    K_s: glMatrix.vec4.fromValues(0.1, 0.2, 0.3, 1),
+    K_e: glMatrix.vec4.fromValues(0.0, 0.0, 0.0, 1),
+    se: 5.0,
+  },
+  BLACK_PLASTIC: {
+    I_a: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_d: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_s: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    K_a: glMatrix.vec4.fromValues(0.0, 0.0, 0.0, 1),
+    K_d: glMatrix.vec4.fromValues(0.01, 0.01, 0.01, 1),
+    K_s: glMatrix.vec4.fromValues(0.5, 0.5, 0.5, 1),
+    K_e: glMatrix.vec4.fromValues(0.0, 0.0, 0.0, 1),
+    se: 32.0,
+  },
+  BLACK_RUBBER: {
+    I_a: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_d: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_s: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    K_a: glMatrix.vec4.fromValues(0.02, 0.02, 0.02, 1),
+    K_d: glMatrix.vec4.fromValues(0.01, 0.01, 0.01, 1),
+    K_s: glMatrix.vec4.fromValues(0.4, 0.4, 0.4, 1),
+    K_e: glMatrix.vec4.fromValues(0.0, 0.0, 0.0, 1),
+    se: 10.0,
+  },
+  BRASS: {
+    I_a: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_d: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_s: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    K_a: glMatrix.vec4.fromValues(0.329412, 0.223529, 0.027451, 1),
+    K_d: glMatrix.vec4.fromValues(0.780392, 0.568627, 0.113725, 1),
+    K_s: glMatrix.vec4.fromValues(0.992157, 0.941176, 0.807843, 1),
+    K_e: glMatrix.vec4.fromValues(0.0, 0.0, 0.0, 1),
+    se: 27.8974,
+  },
+  BRONZE_DULL: {
+    I_a: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_d: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_s: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    K_a: glMatrix.vec4.fromValues(0.2125, 0.1275, 0.054, 1),
+    K_d: glMatrix.vec4.fromValues(0.714, 0.4284, 0.18144, 1),
+    K_s: glMatrix.vec4.fromValues(0.393548, 0.271906, 0.166721, 1),
+    K_e: glMatrix.vec4.fromValues(0.0, 0.0, 0.0, 1),
+    se: 25.6,
+  },
+  BRONZE_SHINY: {
+    I_a: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_d: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_s: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    K_a: glMatrix.vec4.fromValues(0.25, 0.148, 0.06475, 1),
+    K_d: glMatrix.vec4.fromValues(0.4, 0.2368, 0.1036, 1),
+    K_s: glMatrix.vec4.fromValues(0.774597, 0.458561, 0.200621, 1),
+    K_e: glMatrix.vec4.fromValues(0.0, 0.0, 0.0, 1),
+    se: 76.8,
+  },
+  CHROME: {
+    I_a: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_d: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_s: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    K_a: glMatrix.vec4.fromValues(0.25, 0.25, 0.25, 1),
+    K_d: glMatrix.vec4.fromValues(0.4, 0.4, 0.4, 1),
+    K_s: glMatrix.vec4.fromValues(0.774597, 0.774597, 0.774597, ),
+    K_e: glMatrix.vec4.fromValues(0.0, 0.0, 0.0, 1),
+    se: 76.8,
+  },
+  COPPER_DULL: {
+    I_a: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_d: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_s: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    K_a: glMatrix.vec4.fromValues(0.19125, 0.0735, 0.0225, 1),
+    K_d: glMatrix.vec4.fromValues(0.7038, 0.27048, 0.0828, 1),
+    K_s: glMatrix.vec4.fromValues(0.256777, 0.137622, 0.086014, 1),
+    K_e: glMatrix.vec4.fromValues(0.0, 0.0, 0.0, 1),
+    se: 12.8,
+  },
+  COPPER_SHINY: {
+    I_a: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_d: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_s: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    K_a: glMatrix.vec4.fromValues(0.2295, 0.08825, 0.0275, 1),
+    K_d: glMatrix.vec4.fromValues(0.5508, 0.2118, 0.066, 1),
+    K_s: glMatrix.vec4.fromValues(0.580594, 0.223257, 0.0695701, 1),
+    K_e: glMatrix.vec4.fromValues(0.0, 0.0, 0.0, 1),
+    se: 51.2,
+  },
+  GOLD_DULL: {
+    I_a: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_d: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_s: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    K_a: glMatrix.vec4.fromValues(0.24725, 0.1995, 0.0745, 1),
+    K_d: glMatrix.vec4.fromValues(0.75164, 0.60648, 0.22648, 1),
+    K_s: glMatrix.vec4.fromValues(0.628281, 0.555802, 0.366065, 1),
+    K_e: glMatrix.vec4.fromValues(0.0, 0.0, 0.0, 1),
+    se: 51.2,
+  },
+  GOLD_SHINY: {
+    I_a: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_d: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_s: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    K_a: glMatrix.vec4.fromValues(0.24725, 0.2245, 0.0645, 1),
+    K_d: glMatrix.vec4.fromValues(0.34615, 0.3143, 0.0903, 1),
+    K_s: glMatrix.vec4.fromValues(0.797357, 0.723991, 0.208006, 1),
+    K_e: glMatrix.vec4.fromValues(0.0, 0.0, 0.0, 1),
+    se: 83.2,
+  },
+  PEWTER: {
+    I_a: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_d: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_s: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    K_a: glMatrix.vec4.fromValues(0.105882, 0.058824, 0.113725, 1),
+    K_d: glMatrix.vec4.fromValues(0.427451, 0.470588, 0.541176, 1),
+    K_s: glMatrix.vec4.fromValues(0.333333, 0.333333, 0.521569, 1),
+    K_e: glMatrix.vec4.fromValues(0.0, 0.0, 0.0, 1),
+    se: 9.84615,
+  },
+  SILVER_DULL: {
+    I_a: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_d: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_s: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    K_a: glMatrix.vec4.fromValues(0.19225, 0.19225, 0.19225, 1),
+    K_d: glMatrix.vec4.fromValues(0.50754, 0.50754, 0.50754, 1),
+    K_s: glMatrix.vec4.fromValues(0.508273, 0.508273, 0.508273, 1),
+    K_e: glMatrix.vec4.fromValues(0.0, 0.0, 0.0, 1),
+    se: 51.2,
+  },
+  SILVER_SHINY: {
+    I_a: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_d: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_s: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    K_a: glMatrix.vec4.fromValues(0.23125, 0.23125, 0.23125, 1),
+    K_d: glMatrix.vec4.fromValues(0.2775, 0.2775, 0.2775, 1),
+    K_s: glMatrix.vec4.fromValues(0.773911, 0.773911, 0.773911, 1),
+    K_e: glMatrix.vec4.fromValues(0.0, 0.0, 0.0, 1),
+    se: 89.6,
+  },
+  EMERALD: {
+    I_a: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_d: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_s: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    K_a: glMatrix.vec4.fromValues(0.0215, 0.1745, 0.0215, 0.55),
+    K_d: glMatrix.vec4.fromValues(0.07568, 0.61424, 0.07568, 0.55),
+    K_s: glMatrix.vec4.fromValues(0.633, 0.727811, 0.633, 0.55),
+    K_e: glMatrix.vec4.fromValues(0.0, 0.0, 0.0, 1),
+    se: 76.8,
+  },
+  JADE: {
+    I_a: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_d: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_s: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    K_a: glMatrix.vec4.fromValues(0.135, 0.2225, 0.1575, 0.95),
+    K_d: glMatrix.vec4.fromValues(0.54, 0.89, 0.63, 0.95),
+    K_s: glMatrix.vec4.fromValues(0.316228, 0.316228, 0.316228, 0.95),
+    K_e: glMatrix.vec4.fromValues(0.0, 0.0, 0.0, 1),
+    se: 12.8,
+  },
+  OBSIDIAN: {
+    I_a: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_d: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_s: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    K_a: glMatrix.vec4.fromValues(0.05375, 0.05, 0.06625, 0.82),
+    K_d: glMatrix.vec4.fromValues(0.18275, 0.17, 0.22525, 0.82),
+    K_s: glMatrix.vec4.fromValues(0.332741, 0.328634, 0.346435, 0.82),
+    K_e: glMatrix.vec4.fromValues(0.0, 0.0, 0.0, 1),
+    se: 38.4,
+  },
+  PEARL: {
+    I_a: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_d: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_s: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    K_a: glMatrix.vec4.fromValues(0.25, 0.20725, 0.20725, 0.922),
+    K_d: glMatrix.vec4.fromValues(1.0, 0.829, 0.829, 0.922),
+    K_s: glMatrix.vec4.fromValues(0.296648, 0.296648, 0.296648, 0.922),
+    K_e: glMatrix.vec4.fromValues(0.0, 0.0, 0.0, 1),
+    se: 11.264,
+  },
+  RUBY: {
+    I_a: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_d: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_s: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    K_a: glMatrix.vec4.fromValues(0.1745, 0.01175, 0.01175, 0.55),
+    K_d: glMatrix.vec4.fromValues(0.61424, 0.04136, 0.04136, 0.55),
+    K_s: glMatrix.vec4.fromValues(0.727811, 0.626959, 0.626959, 0.55),
+    K_e: glMatrix.vec4.fromValues(0.0, 0.0, 0.0, 1),
+    se: 76.8,
+  },
+  TURQUOISE: {
+    I_a: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_d: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_s: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    K_a: glMatrix.vec4.fromValues(0.1, 0.18725, 0.1745, 0.8),
+    K_d: glMatrix.vec4.fromValues(0.396, 0.74151, 0.69102, 0.8),
+    K_s: glMatrix.vec4.fromValues(0.297254, 0.30829, 0.306678, 0.8),
+    K_e: glMatrix.vec4.fromValues(0.0, 0.0, 0.0, 1),
+    se: 12.8,
+  },
+  DEFAULT: {
+    I_a: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_d: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    I_s: glMatrix.vec4.fromValues(1, 1, 1, 1),
+    K_a: glMatrix.vec4.fromValues(0.0, 0.0, 0.0, 1),
+    K_d: glMatrix.vec4.fromValues(0.0, 0.0, 0.0, 1),
+    K_s: glMatrix.vec4.fromValues(0.0, 0.0, 0.0, 1),
+    K_e: glMatrix.vec4.fromValues(0.5, 0.0, 0.0, 1),
+    se: 1.0,
   }
 }

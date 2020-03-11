@@ -207,89 +207,53 @@ class Geometry {
    * @param {!Hit} hit The hit point where the shading is being done.
    */
   shade(hit) {
-    switch (this.type) {
-      case GEOMETRIES.GRID:
-      case GEOMETRIES.DISC:
-        // if the following conditionals are met, this ray hit a line
-        var loc = hit.modelHitPoint[0] / this.xgap;
-        if (hit.modelHitPoint[0] < 0) loc = -loc;
-        if (loc % 1 < this.lineWidth) {
-          hit.hit_color = this.lineColor;
-          return;
-        }
-        loc = hit.modelHitPoint[1] / this.ygap;
-        if (hit.modelHitPoint[1] < 0) loc = -loc;
-        if (loc % 1 < this.lineWidth) {
-          hit.hit_color = this.lineColor;
-          return;
-        }
+    var light_pos = glMatrix.vec4.fromValues(
+      g_scene.lights.get(0).position[0],
+      g_scene.lights.get(0).position[1],
+      g_scene.lights.get(0).position[2],
+      0);
 
-        // otherwise this ray hit a gap
-        hit.hit_color = this.gapColor;
-        break;
-      case GEOMETRIES.SPHERE:
-        var light_pos = glMatrix.vec4.fromValues(
-          g_scene.lights.get(0).position[0],
-          g_scene.lights.get(0).position[1],
-          g_scene.lights.get(0).position[2],
-          0);
+    glMatrix.vec4.transformMat4(light_pos, light_pos, this.world_to_model);
 
-        glMatrix.vec4.transformMat4(light_pos, light_pos, this.world_to_model);
+    var N = glMatrix.vec4.fromValues(hit.modelHitPoint[0], hit.modelHitPoint[1], hit.modelHitPoint[2], 0);
+    glMatrix.vec4.normalize(N, N);
+    var L = glMatrix.vec4.subtract(glMatrix.vec4.create(), light_pos, hit.modelHitPoint);
+    glMatrix.vec4.normalize(L, L);
+    var n_dot_l = glMatrix.vec4.dot(N, L);
+    var R = glMatrix.vec4.create();
+    Ray.reflect(R, L, N);
 
-        var N = glMatrix.vec4.fromValues(
-          hit.modelHitPoint[0],
-          hit.modelHitPoint[1],
-          hit.modelHitPoint[2],
-          0
-        );
-        glMatrix.vec4.normalize(N, N);
-        var L = glMatrix.vec4.create();
-        glMatrix.vec4.subtract(L, light_pos, hit.modelHitPoint);
-        glMatrix.vec4.normalize(L, L);
-        var n_dot_l = glMatrix.vec4.dot(N, L);
-        var V = glMatrix.vec4.clone(hit.viewNormal);
-        var C = glMatrix.vec4.create();
-        glMatrix.vec4.scale(C, N, n_dot_l);
-        var R = glMatrix.vec4.create();
-        glMatrix.vec4.scale(R, C, 2);
-        glMatrix.vec4.subtract(R, R, L);
-
-        var color = glMatrix.vec4.create();
-        glMatrix.vec4.zero(color);
-        var attenuation = 1; // default
-        // Emissive
-        glMatrix.vec4.add(color, color,
-          this._mat._k_e);
-        // Ambient illumination * ambient reflectance
-        glMatrix.vec4.add(color, color,
-          glMatrix.vec4.multiply(
-            glMatrix.vec4.create(),
-            this._mat._i_a,
-            this._mat._k_a));
-        // Duffuse illumination * diffuse reflectance
-        glMatrix.vec4.scaleAndAdd(color, color,
-          glMatrix.vec4.multiply(
-            glMatrix.vec4.create(),
-            this._mat._i_d,
-            this._mat._k_d),
-          Math.max(0, n_dot_l) * attenuation);
-        // Specular illumination * specular reflectance
-        glMatrix.vec4.scaleAndAdd(color, color,
-          glMatrix.vec4.multiply(
-            glMatrix.vec4.create(),
-            this._mat._i_s,
-            this._mat._k_s),
-          Math.pow(
-            Math.max(
-              0,
-              glMatrix.vec4.dot(R, V)),
-            this._mat._se) * attenuation);
-        hit.hit_color = color;
-        break;
-      default:
-        hit.hit_color = this.color;
-        break;
-    }
+    var color = glMatrix.vec4.create();
+    glMatrix.vec4.zero(color);
+    var attenuation = 1; // default
+    // Emissive
+    glMatrix.vec4.add(color, color,
+      this._mat.K_e);
+    // Ambient illumination * ambient reflectance
+    glMatrix.vec4.add(color, color,
+      glMatrix.vec4.multiply(
+        glMatrix.vec4.create(),
+        this._mat.I_a,
+        this._mat.K_a));
+    // Duffuse illumination * diffuse reflectance
+    glMatrix.vec4.scaleAndAdd(color, color,
+      glMatrix.vec4.multiply(
+        glMatrix.vec4.create(),
+        this._mat.I_d,
+        this._mat.K_d),
+      Math.max(0, n_dot_l) * attenuation);
+    // Specular illumination * specular reflectance
+    glMatrix.vec4.scaleAndAdd(color, color,
+      glMatrix.vec4.multiply(
+        glMatrix.vec4.create(),
+        this._mat.I_s,
+        this._mat.K_s),
+      Math.pow(
+        Math.max(
+          0,
+          glMatrix.vec4.dot(R, glMatrix.vec4.clone(hit.viewNormal))),
+        this._mat.se) * attenuation);
+    hit.hit_color = color;
   }
 
   setIdentity() {
