@@ -80,8 +80,10 @@ function initGui() {
     name: 'My GUI',
     hideable: false
   });
+  // META
   gui.add(tracker, 'fps', 0, 60, 1).name('FPS').listen();
   gui.add(tracker, 'pause').name('Pause').listen();
+  // QUALITY
   gui.add(tracker, 'resolution', {
     "64x64 px": 64,
     "128x128 px": 128,
@@ -89,7 +91,8 @@ function initGui() {
     "512x512 px": 512,
     "1024x1024 px": 1024,
   }).name('Resolution').onChange(value => g_scene.setImageBuffer(new ImageBuffer(value, value)));
-  gui.add(tracker, 'depth', 1, 4, 1).name('Depth').onChange(value => g_scene.max_depth = value);
+  gui.add(tracker, 'depth', 1, 4, 1).name('Depth');
+  // AA
   var aa = gui.addFolder('Antialiasing');
   aa.add(tracker, 'aa', {
     "1x1": 1,
@@ -99,8 +102,9 @@ function initGui() {
   }).name('Supersampling');
   aa.add(tracker, 'jitter').name('Jitter');
   aa.open();
+  // TRACE
   gui.add(tracker, 'trace').name('Trace!');
-  gui.add(tracker, 'progress', 0, 100, 1).name('Progress:').listen();
+  // gui.add(tracker, 'progress', 0, 100, 1).name('Progress:').listen();
   gui.open();
   document.getElementsByClassName('close-bottom')[0].onclick = function() {
     gui_open = !gui_open;

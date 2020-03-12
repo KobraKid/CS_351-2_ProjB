@@ -85,7 +85,7 @@ const MATERIALS = {
     I_s: glMatrix.vec4.fromValues(1, 1, 1, 1),
     K_a: glMatrix.vec4.fromValues(0.25, 0.25, 0.25, 1),
     K_d: glMatrix.vec4.fromValues(0.4, 0.4, 0.4, 1),
-    K_s: glMatrix.vec4.fromValues(0.774597, 0.774597, 0.774597, ),
+    K_s: glMatrix.vec4.fromValues(0.774597, 0.774597, 0.774597, 1),
     K_e: glMatrix.vec4.fromValues(0.0, 0.0, 0.0, 1),
     se: 76.8,
   },

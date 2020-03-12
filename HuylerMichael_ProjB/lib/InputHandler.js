@@ -38,6 +38,16 @@ function keyDown(kev) {
     case "84":
       do_raytracing();
       break;
+    case "KeyC":
+      console.log(`Camera state:
+yaw: ${tracker.camera.yaw},
+pitch: ${tracker.camera.pitch},
+eye_point: glMatrix.vec4.fromValues(${tracker.camera.eye_point[0]}, ${tracker.camera.eye_point[1]}, ${tracker.camera.eye_point[2]}, ${tracker.camera.eye_point[3]}),
+aim_point: glMatrix.vec4.fromValues(${tracker.camera.aim_point[0]}, ${tracker.camera.aim_point[1]}, ${tracker.camera.aim_point[2]}, ${tracker.camera.aim_point[3]}),
+up_vector: glMatrix.vec4.fromValues(${tracker.camera.up_vector[0]}, ${tracker.camera.up_vector[1]}, ${tracker.camera.up_vector[2]}, ${tracker.camera.up_vector[3]}),
+mouse_drag_x: ${mouse_drag_x},
+mouse_drag_y: ${mouse_drag_y},`);
+      break;
     case "Period":
     case "86":
       toggle_help();

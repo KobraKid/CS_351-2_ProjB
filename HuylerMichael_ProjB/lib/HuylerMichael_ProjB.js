@@ -15,7 +15,9 @@ var canvas;
 var aspect;
 var offset;
 
-// The global scene
+/* Scenes */
+var scenes = [];
+// The current scene
 var g_scene;
 
 /* WebGL preview VBOs */
@@ -39,8 +41,6 @@ function main() {
   canvas.width = window.innerHeight * 2;
   canvas.height = window.innerHeight;
   aspect = canvas.width / canvas.height;
-  g_scene = new Scene(2);
-  g_scene.setImageBuffer(new ImageBuffer(tracker.resolution, tracker.resolution));
 
   gl = canvas.getContext("webgl", {
     preserveDrawingBuffer: true
@@ -68,6 +68,7 @@ function main() {
   window.addEventListener("keyup", keyUp, false);
 
   initGui();
+  initScenes();
   initVBOBoxes();
 
   // There is a significant overhead inherent in setting up the VBOs and
@@ -87,7 +88,48 @@ function main() {
     }
   };
   tick();
-  g_scene.traceImage();
+  do_raytracing();
+}
+
+function initScenes() {
+  var scene;
+  // Scene 1
+  scene = new Scene({
+    yaw: -0.6059341592139349,
+    pitch: -0.49779086892489066,
+    eye_point: glMatrix.vec4.fromValues(-6.2330098152160645, 3.9786722660064697, 5.04525899887085, 1),
+    aim_point: glMatrix.vec4.fromValues(-5.510794162750244, 3.4782605171203613, 4.567773342132568, 1),
+    up_vector: glMatrix.vec4.fromValues(0.3924790918827057, -0.27194249629974365, 0.8786395192146301, 1),
+    mouse_drag_x: -2.1767304860088315,
+    mouse_drag_y: -0.49779086892489066,
+  });
+  scene.geometries.add(new Geometry(GEOMETRIES.GRID, MATERIALS.BLACK_RUBBER, []));
+  scene.geometries.add(new Geometry(GEOMETRIES.SPHERE, MATERIALS.RED_PLASTIC, [
+    new TransformationBox(TRANSFORMATIONS.TRANSLATE, -1.01, -1, 1),
+  ]));
+  scene.geometries.add(new Geometry(GEOMETRIES.SPHERE, MATERIALS.CHROME, [
+    new TransformationBox(TRANSFORMATIONS.TRANSLATE, 1.01, -1, 1),
+  ]));
+  scene.geometries.add(new Geometry(GEOMETRIES.DISC, MATERIALS.GOLD_SHINY, [
+    new TransformationBox(TRANSFORMATIONS.TRANSLATE, 1, 1, 1.3),
+    new TransformationBox(TRANSFORMATIONS.ROTATE, 1, 0, 0, 0.25 * Math.PI),
+    new TransformationBox(TRANSFORMATIONS.ROTATE, 0, 0, 1, 0.25 * Math.PI),
+  ]));
+  scene.geometries.add(new Geometry(GEOMETRIES.DISC, MATERIALS.EMERALD, [
+    new TransformationBox(TRANSFORMATIONS.TRANSLATE, -3, 1, 1.3),
+  ]));
+  scene.lights.add(new Light(glMatrix.vec4.fromValues(-6, -3, 2, 1)));
+  scene.lights.add(new Light(glMatrix.vec4.fromValues(6, -3, 2, 1)));
+  scenes.push(scene);
+
+  // Scene 2
+  scene = new Scene();
+  scene.geometries.add(new Geometry(GEOMETRIES.GRID, MATERIALS.BLACK_RUBBER, []));
+  scenes.push(scene);
+
+  g_scene = scenes[0];
+  g_scene.setImageBuffer(new ImageBuffer(tracker.resolution, tracker.resolution));
+  g_scene.enable();
 }
 
 /**

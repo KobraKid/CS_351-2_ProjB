@@ -7,12 +7,12 @@ const GEOMETRIES = {
 };
 
 class Geometry {
-  constructor(type, material, ...params) {
+  constructor(type, material, transformations, ...params) {
     this._type = type;
     this._mat = material;
+    this._transformations = transformations;
     this.world_to_model = glMatrix.mat4.create();
     this.normal_to_world = glMatrix.mat4.create();
-    this._transformations = [];
     switch (this._type) {
       case GEOMETRIES.GRID:
         break;
@@ -40,11 +40,29 @@ class Geometry {
         break;
       case GEOMETRIES.R_S_T_:
         this.dmin = (p) => {
-          return Math.pow(Math.abs(p[0]), params[0]) + Math.pow(Math.abs(p[1]), params[1]) + Math.pow(Math.abs(p[2]), params[2]) - 1;
+          return Math.pow(Math.abs(p[0]), params[0]) +
+            Math.pow(Math.abs(p[1]), params[1]) +
+            Math.pow(Math.abs(p[2]), params[2]) - 1;
         };
         break;
       default:
         break;
+    }
+    this.setIdentity();
+    for (var i = 0; i < transformations.length; i++) {
+      switch (transformations[i].type) {
+        case TRANSFORMATIONS.TRANSLATE:
+          this.rayTranslate(transformations[i].vector);
+          break;
+        case TRANSFORMATIONS.ROTATE:
+          this.rayRotate(transformations[i].rad, transformations[i].vector);
+          break;
+        case TRANSFORMATIONS.SCALE:
+          this.rayScale(transformations[i].vector);
+          break;
+        default:
+          break;
+      }
     }
   }
 
@@ -199,11 +217,11 @@ class Geometry {
    *
    * @param {!Hit} hit The hit point where the shading is being done.
    */
-  shade(hit) {
+  shade(hit, light_index, in_shadow) {
     var light_pos = glMatrix.vec4.fromValues(
-      g_scene.lights.get(0).position[0],
-      g_scene.lights.get(0).position[1],
-      g_scene.lights.get(0).position[2],
+      g_scene.lights.get(light_index).position[0],
+      g_scene.lights.get(light_index).position[1],
+      g_scene.lights.get(light_index).position[2],
       0);
 
     glMatrix.vec4.transformMat4(light_pos, light_pos, this.world_to_model);
@@ -216,37 +234,28 @@ class Geometry {
     var R = glMatrix.vec4.create();
     Ray.reflect(R, L, N);
 
-    var color = glMatrix.vec4.create();
-    glMatrix.vec4.zero(color);
-    var attenuation = 1; // default
+    var attenuation = 1 / glMatrix.vec4.length(L);
     // Emissive
-    glMatrix.vec4.add(color, color,
-      this._mat.K_e);
+    glMatrix.vec4.copy(hit.emissive, this._mat.K_e);
     // Ambient illumination * ambient reflectance
-    glMatrix.vec4.add(color, color,
-      glMatrix.vec4.multiply(
-        glMatrix.vec4.create(),
-        this._mat.I_a,
-        this._mat.K_a));
-    // Duffuse illumination * diffuse reflectance
-    glMatrix.vec4.scaleAndAdd(color, color,
-      glMatrix.vec4.multiply(
-        glMatrix.vec4.create(),
-        this._mat.I_d,
-        this._mat.K_d),
-      Math.max(0, n_dot_l) * attenuation);
-    // Specular illumination * specular reflectance
-    glMatrix.vec4.scaleAndAdd(color, color,
-      glMatrix.vec4.multiply(
-        glMatrix.vec4.create(),
-        this._mat.I_s,
-        this._mat.K_s),
-      Math.pow(
-        Math.max(
-          0,
-          glMatrix.vec4.dot(R, glMatrix.vec4.clone(hit.viewNormal))),
-        this._mat.se) * attenuation);
-    hit.hit_color = color;
+    glMatrix.vec4.multiply(hit.ambient, this._mat.I_a, this._mat.K_a);
+    // Only add diffuse and specular if not in shadow
+    if (!in_shadow) {
+      // Duffuse illumination * diffuse reflectance
+      glMatrix.vec4.scaleAndAdd(hit.diffuse, hit.diffuse,
+        glMatrix.vec4.multiply(
+          glMatrix.vec4.create(),
+          this._mat.I_d,
+          this._mat.K_d),
+        Math.max(0, n_dot_l) * attenuation);
+      // Specular illumination * specular reflectance
+      glMatrix.vec4.scaleAndAdd(hit.specular, hit.specular,
+        glMatrix.vec4.multiply(
+          glMatrix.vec4.create(),
+          this._mat.I_s,
+          this._mat.K_s),
+        Math.pow(Math.max(0, glMatrix.vec4.dot(R, hit.viewNormal)), this._mat.se) * attenuation);
+    }
   }
 
   setIdentity() {
@@ -254,21 +263,19 @@ class Geometry {
     glMatrix.mat4.identity(this.normal_to_world);
   }
 
-  rayTranslate(x, y, z) {
-    this.transformations.push(new TransformationBox(TRANSFORMATIONS.TRANSLATE, x, y, z));
+  rayTranslate(vector) {
     var inverse_translate = glMatrix.mat4.create();
-    inverse_translate[12] = -x;
-    inverse_translate[13] = -y;
-    inverse_translate[14] = -z;
+    inverse_translate[12] = -vector[0];
+    inverse_translate[13] = -vector[1];
+    inverse_translate[14] = -vector[2];
     glMatrix.mat4.multiply(this.world_to_model, inverse_translate, this.world_to_model);
     glMatrix.mat4.transpose(this.normal_to_world, this.world_to_model);
   }
 
-  rayRotate(rad, ax, ay, az) {
-    this.transformations.push(new TransformationBox(TRANSFORMATIONS.ROTATE, ax, ay, az, rad));
-    var x = ax;
-    var y = ay;
-    var z = az;
+  rayRotate(rad, vector) {
+    var x = vector[0];
+    var y = vector[1];
+    var z = vector[2];
     var len = Math.sqrt(x * x + y * y + z * z);
     if (Math.abs(len) < glMatrix.GLMAT_EPSILON) {
       console.log("Geometry.rayScale()\tError: zero-length axis vector");
@@ -302,18 +309,17 @@ class Geometry {
     glMatrix.mat4.transpose(this.normal_to_world, this.world_to_model);
   }
 
-  rayScale(sx, sy, sz) {
-    this.transformations.push(new TransformationBox(TRANSFORMATIONS.SCALE, sx, sy, sz));
-    if (Math.abs(sx) < glMatrix.GLMAT_EPSILON ||
-      Math.abs(sy) < glMatrix.GLMAT_EPSILON ||
-      Math.abs(sz) < glMatrix.GLMAT_EPSILON) {
+  rayScale(vector) {
+    if (Math.abs(vector[0]) < glMatrix.GLMAT_EPSILON ||
+      Math.abs(vector[1]) < glMatrix.GLMAT_EPSILON ||
+      Math.abs(vector[2]) < glMatrix.GLMAT_EPSILON) {
       console.log("Geometry.rayScale()\tError: zero-length scale");
       return null;
     }
     var inverse_scale = glMatrix.mat4.create();
-    inverse_scale[0] = 1 / sx;
-    inverse_scale[5] = 1 / sy;
-    inverse_scale[10] = 1 / sz;
+    inverse_scale[0] = 1 / vector[0];
+    inverse_scale[5] = 1 / vector[1];
+    inverse_scale[10] = 1 / vector[2];
     glMatrix.mat4.multiply(this.world_to_model, inverse_scale, this.world_to_model);
     glMatrix.mat4.transpose(this.normal_to_world, this.world_to_model);
   }
