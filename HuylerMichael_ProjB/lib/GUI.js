@@ -10,13 +10,13 @@
 var gui;
 var gui_open = true;
 let GuiTracker = function() {
-  this.pause = false;
+  this.scene = 0;
   this.clear = true;
   this.trace = function() {
     do_raytracing();
   };
   this.progress = 0;
-  this.resolution = 32;
+  this.resolution = 128;
   this.depth = 2;
   /* FPS */
   this.fps = 60.0;
@@ -81,17 +81,26 @@ function initGui() {
     hideable: false
   });
   // META
-  gui.add(tracker, 'fps', 0, 60, 1).name('FPS').listen();
-  gui.add(tracker, 'pause').name('Pause').listen();
+  // gui.add(tracker, 'fps', 0, 60, 1).name('FPS').listen();
+  gui.add(tracker, 'scene', {
+    "Scene 1": 0,
+    "Scene 2": 1,
+    "Scene 3": 2,
+    "Scene 4": 3
+  }).name('Scene').listen().onChange(value => {
+    g_scene = scenes[parseInt(value)];
+    g_scene.enable();
+  });
   // QUALITY
   gui.add(tracker, 'resolution', {
+    "32x32 px": 32,
     "64x64 px": 64,
     "128x128 px": 128,
     "256x256 px": 256,
     "512x512 px": 512,
     "1024x1024 px": 1024,
-  }).name('Resolution').onChange(value => g_scene.setImageBuffer(new ImageBuffer(value, value)));
-  gui.add(tracker, 'depth', 1, 4, 1).name('Depth');
+  }).name('Resolution').listen().onChange(value => g_scene.setImageBuffer(new ImageBuffer(parseInt(value), parseInt(value))));
+  gui.add(tracker, 'depth', 0, 8, 1).name('Depth').listen();
   // AA
   var aa = gui.addFolder('Antialiasing');
   aa.add(tracker, 'aa', {
@@ -99,8 +108,8 @@ function initGui() {
     "2x2": 2,
     "3x3": 3,
     "4x4": 4,
-  }).name('Supersampling');
-  aa.add(tracker, 'jitter').name('Jitter');
+  }).name('Supersampling').listen();
+  aa.add(tracker, 'jitter').name('Jitter').listen();
   aa.open();
   // TRACE
   gui.add(tracker, 'trace').name('Trace!');

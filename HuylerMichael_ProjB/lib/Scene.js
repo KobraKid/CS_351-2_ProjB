@@ -21,6 +21,7 @@ class Scene {
     mouse_drag_y = this.default_camera.mouse_drag_y;
     this.ray_camera.rayPerspective(tracker.camera.fovy, tracker.camera.aspect, tracker.camera.near);
     this.ray_camera.rayLookAt(tracker.camera.eye_point, tracker.camera.aim_point, tracker.camera.up_vector);
+    this.setImageBuffer(new ImageBuffer(tracker.resolution, tracker.resolution));
   }
 
   setImageBuffer(buffer) {
@@ -49,7 +50,7 @@ class Scene {
             hit.clear();
             this.trace(this.eye_ray, hit);
             // find the shade at the hit point (potentially recursively)
-            this.shade(hit, color, tracker.depth - 1);
+            this.shade(hit, color, tracker.depth);
           }
           buffer_index = (p_y * this.buffer.width + p_x) * this.buffer.pixel_size;
           this.buffer.fBuf[buffer_index] = color[0];
@@ -115,6 +116,8 @@ class Scene {
       Ray.reflect(this.reflection_ray.direction, hit.viewNormal, hit.surfaceNormal);
       this.trace(this.reflection_ray, reflection_hit);
 
+      // TODO: accumulate reflections accurately
+      // Removing the comparison to GRID creates a pure white with high enough recursive depth
       if (reflection_hit.hit_geometry != null && reflection_hit.hit_geometry.type != GEOMETRIES.GRID) {
         this.shade(reflection_hit, reflection_hit.hit_color, depth - 1);
         glMatrix.vec4.scale(hit.hit_color, hit.hit_color, 0.5);

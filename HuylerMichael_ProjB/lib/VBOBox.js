@@ -275,9 +275,8 @@ class VBOBox {
           gl.drawArrays(this.draw_method, this.disc_vertex_offset, this.disc_vertex_count);
           break;
         case GEOMETRIES.SPHERE:
-          gl.drawArrays(this.draw_method, this.sphere_vertex_offset, this.sphere_vertex_count);
-          break;
         default:
+          gl.drawArrays(this.draw_method, this.sphere_vertex_offset, this.sphere_vertex_count);
           break;
       }
       // Reset transformations

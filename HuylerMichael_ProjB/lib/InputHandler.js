@@ -30,13 +30,13 @@ function keyDown(kev) {
   }
   keysPressed[code] = true;
   switch (code) {
-    case "KeyP":
-    case "80":
-      tracker.pause = !tracker.pause;
-      break;
     case "KeyT":
     case "84":
       do_raytracing();
+      break;
+    case "KeyJ":
+    case "72":
+      tracker.jitter = !tracker.jitter;
       break;
     case "KeyC":
       console.log(`Camera state:
@@ -47,6 +47,68 @@ aim_point: glMatrix.vec4.fromValues(${tracker.camera.aim_point[0]}, ${tracker.ca
 up_vector: glMatrix.vec4.fromValues(${tracker.camera.up_vector[0]}, ${tracker.camera.up_vector[1]}, ${tracker.camera.up_vector[2]}, ${tracker.camera.up_vector[3]}),
 mouse_drag_x: ${mouse_drag_x},
 mouse_drag_y: ${mouse_drag_y},`);
+      break;
+    case "Digit1":
+    case "49":
+      tracker.scene = 0;
+      g_scene = scenes[0];
+      g_scene.enable();
+      break;
+    case "Digit2":
+    case "50":
+      tracker.scene = 1;
+      g_scene = scenes[1];
+      g_scene.enable();
+      break;
+    case "Digit3":
+    case "51":
+      tracker.scene = 2;
+      g_scene = scenes[2];
+      g_scene.enable();
+      break;
+    case "Digit4":
+    case "52":
+      tracker.scene = 3;
+      g_scene = scenes[3];
+      g_scene.enable();
+      break;
+    case "ArrowUp":
+    case "38":
+      if (tracker.resolution < 1024) {
+        tracker.resolution *= 2;
+        g_scene.setImageBuffer(new ImageBuffer(tracker.resolution, tracker.resolution));
+      }
+      break;
+    case "ArrowDown":
+    case "40":
+      if (tracker.resolution > 32) {
+        tracker.resolution /= 2;
+        g_scene.setImageBuffer(new ImageBuffer(tracker.resolution, tracker.resolution));
+      }
+      break;
+    case "ArrowLeft":
+    case "37":
+      if (tracker.depth > 0) {
+        tracker.depth--;
+      }
+      break;
+    case "ArrowRight":
+    case "39":
+      if (tracker.depth < 8) {
+        tracker.depth++;
+      }
+      break;
+    case "PageUp":
+    case "33":
+      if (tracker.aa < 4) {
+        tracker.aa++;
+      }
+      break;
+    case "PageDown":
+    case "34":
+      if (tracker.aa > 1) {
+        tracker.aa--;
+      }
       break;
     case "Period":
     case "86":

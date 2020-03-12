@@ -3,7 +3,8 @@ const GEOMETRIES = {
   DISC: 1,
   SPHERE: 2,
   CUBE: 3,
-  R_S_T_: 4,
+  SUPERQUADRATIC: 4,
+  CYLINDER: 5,
 };
 
 class Geometry {
@@ -38,12 +39,19 @@ class Geometry {
           );
         };
         break;
-      case GEOMETRIES.R_S_T_:
+      case GEOMETRIES.SUPERQUADRATIC:
         this.dmin = (p) => {
-          return Math.pow(Math.abs(p[0]), params[0]) +
-            Math.pow(Math.abs(p[1]), params[1]) +
-            Math.pow(Math.abs(p[2]), params[2]) - 1;
+          return 0;
         };
+        break;
+      case GEOMETRIES.CYLINDER:
+        this.radius = 1;
+        this.dmin = (p) => {
+          var q = glMatrix.vec3.create();
+          var b = glMatrix.vec3.fromValues(1, 2, 1);
+          glMatrix.vec3.subtract(q, glMatrix.vec3.fromValues(Math.abs(p[0]), Math.abs(p[1]), Math.abs(p[2])), b);
+          return glMatrix.vec3.length(glMatrix.vec3.fromValues(Math.max(0, q[0]), Math.max(0, q[1]), Math.max(0, q[2]))) + Math.min(Math.max(q[0], Math.max(q[1], q[2])), 0);
+        }
         break;
       default:
         break;
@@ -177,7 +185,67 @@ class Geometry {
         break;
         // Any 'ray marching' shapes
       case GEOMETRIES.CUBE:
-      case GEOMETRIES.R_S_T_:
+      case GEOMETRIES.SUPERQUADRATIC:
+        // copy ray and transform
+        var rayT = new Ray();
+        glMatrix.vec4.transformMat4(rayT.origin, inRay.origin, this.world_to_model);
+        glMatrix.vec4.transformMat4(rayT.direction, inRay.direction, this.world_to_model);
+
+        var A = 1;
+        var B = 1;
+        var C = 1;
+        var D = 0;
+        var E = 0;
+        var F = 0;
+        var G = 0;
+        var H = 0;
+        var I = 0;
+        var J = -1;
+        var Aq =
+          (A * rayT.direction[0] * rayT.direction[0]) +
+          (B * rayT.direction[1] * rayT.direction[1]) +
+          (C * rayT.direction[2] * rayT.direction[2]) +
+          (D * rayT.direction[0] * rayT.direction[1]) +
+          (E * rayT.direction[0] * rayT.direction[2]) +
+          (F * rayT.direction[1] * rayT.direction[2]);
+        var Bq =
+          (2 * A * rayT.origin[0] * rayT.direction[0]) +
+          (2 * B * rayT.origin[1] * rayT.direction[1]) +
+          (2 * C * rayT.origin[2] * rayT.direction[2]) +
+          (D * (rayT.origin[0] * rayT.direction[1] + rayT.origin[1] * rayT.direction[0])) +
+          (E * (rayT.origin[0] * rayT.direction[2] + rayT.origin[2] * rayT.direction[0])) +
+          (F * (rayT.origin[1] * rayT.direction[2] + rayT.origin[2] * rayT.direction[1])) +
+          (G * rayT.direction[0]) +
+          (H * rayT.direction[1]) +
+          (I * rayT.direction[2]);
+        var Cq =
+          (A * rayT.origin[0] * rayT.origin[0]) +
+          (B * rayT.origin[1] * rayT.origin[1]) +
+          (C * rayT.origin[2] * rayT.origin[2]) +
+          (D * rayT.origin[0] * rayT.origin[1]) +
+          (E * rayT.origin[0] * rayT.origin[2]) +
+          (F * rayT.origin[1] * rayT.origin[2]) +
+          (G * rayT.origin[0]) +
+          (H * rayT.origin[1]) +
+          (I * rayT.origin[2]) +
+          J;
+        var t_0 = (Aq == 0) ? -Cq / Bq : (-Bq - Math.sqrt(Bq * Bq - 4 * Aq * Cq)) / 2 * Aq;
+        if (Bq * Bq - 4 * Aq * Cq < 0) return;
+        if (t_0 <= 0) t_0 = (-Bq + Math.sqrt(Bq * Bq - 4 * Aq * Cq)) / 2 * Aq;
+
+        if (t_0 > hit.t_0) return; // farther than some previous hit
+
+        hit.t_0 = t_0;
+        hit.hit_geometry = this;
+        if (inRay.shadow) return;
+        glMatrix.vec4.scaleAndAdd(hit.modelHitPoint, rayT.origin, rayT.direction, hit.t_0);
+        glMatrix.vec4.scaleAndAdd(hit.hitPoint, inRay.origin, inRay.direction, hit.t_0);
+        glMatrix.vec4.negate(hit.viewNormal, inRay.direction);
+        glMatrix.vec4.normalize(hit.viewNormal, hit.viewNormal);
+        glMatrix.vec4.transformMat4(hit.surfaceNormal, glMatrix.vec4.fromValues(0, 0, 1, 0), this.normal_to_world);
+        glMatrix.vec4.normalize(hit.surfaceNormal, hit.surfaceNormal);
+        break;
+      case GEOMETRIES.CYLINDER:
         // copy ray and transform
         var rayT = new Ray();
         glMatrix.vec4.transformMat4(rayT.origin, inRay.origin, this.world_to_model);

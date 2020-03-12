@@ -1,7 +1,7 @@
 class ImageBuffer {
   constructor(width, height) {
-    this._w = parseInt(width);
-    this._h = parseInt(height);
+    this._w = width;
+    this._h = height;
     this.pixel_size = 3; // RGB, 4 for RGBA
     this.iBuf = new Uint8Array(width * height * this.pixel_size);
     this.fBuf = new Float32Array(width * height * this.pixel_size);
