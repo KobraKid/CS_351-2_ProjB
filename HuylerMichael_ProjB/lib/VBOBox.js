@@ -73,9 +73,13 @@ class VBOBox {
     this._projection_matrix = glMatrix.mat4.create();
 
     /* Vertex counts */
-    this.c_grid_vertex = 44;
-    this.c_disc_vertex = 44;
-    this.c_sphere_vertex = 676;
+    this.grid_vertex_count = 44;
+    this.disc_vertex_count = 44;
+    this.sphere_vertex_count = 676;
+    /* Vertex offsets */
+    this.grid_vertex_offset = 0;
+    this.disc_vertex_offset = 44;
+    this.sphere_vertex_offset = 88;
   }
 
   get index() {
@@ -240,41 +244,45 @@ class VBOBox {
     }
     var v_count = 0;
     var temp;
-    // Grid
-    temp = glMatrix.mat4.create();
-    glMatrix.mat4.copy(temp, this._mvp_matrix);
-    gl.uniformMatrix4fv(this.u_mvp_matrix_loc, false, this._mvp_matrix);
-    gl.drawArrays(this.draw_method, v_count, this.c_grid_vertex);
-    v_count += this.c_grid_vertex;
-    this._mvp_matrix = temp;
-    // Disc 1
-    temp = glMatrix.mat4.create();
-    glMatrix.mat4.copy(temp, this._mvp_matrix);
-    glMatrix.mat4.translate(this._mvp_matrix, this._mvp_matrix, glMatrix.vec3.fromValues(1, 1, 1.3));
-    glMatrix.mat4.rotate(this._mvp_matrix, this._mvp_matrix, 0.25 * Math.PI, glMatrix.vec3.fromValues(1, 0, 0));
-    glMatrix.mat4.rotate(this._mvp_matrix, this._mvp_matrix, 0.25 * Math.PI, glMatrix.vec3.fromValues(0, 0, 1));
-    gl.uniformMatrix4fv(this.u_mvp_matrix_loc, false, this._mvp_matrix);
-    gl.drawArrays(this.draw_method, v_count, this.c_disc_vertex);
-    v_count += this.c_disc_vertex;
-    this._mvp_matrix = temp;
-    // Disc 2
-    temp = glMatrix.mat4.create();
-    glMatrix.mat4.copy(temp, this._mvp_matrix);
-    glMatrix.mat4.translate(this._mvp_matrix, this._mvp_matrix, glMatrix.vec3.fromValues(-1, 1, 1.3));
-    glMatrix.mat4.rotate(this._mvp_matrix, this._mvp_matrix, 0.75 * Math.PI, glMatrix.vec3.fromValues(1, 0, 0));
-    glMatrix.mat4.rotate(this._mvp_matrix, this._mvp_matrix, Math.PI / 3, glMatrix.vec3.fromValues(0, 0, 1));
-    gl.uniformMatrix4fv(this.u_mvp_matrix_loc, false, this._mvp_matrix);
-    gl.drawArrays(this.draw_method, v_count, this.c_disc_vertex);
-    v_count += this.c_disc_vertex;
-    this._mvp_matrix = temp;
-    // Sphere
-    temp = glMatrix.mat4.create();
-    glMatrix.mat4.copy(temp, this._mvp_matrix);
-    glMatrix.mat4.translate(this._mvp_matrix, this._mvp_matrix, glMatrix.vec3.fromValues(0, -1, 1));
-    gl.uniformMatrix4fv(this.u_mvp_matrix_loc, false, this._mvp_matrix);
-    gl.drawArrays(this.draw_method, v_count, this.c_sphere_vertex);
-    v_count += this.c_sphere_vertex;
-    this._mvp_matrix = temp;
+    var geom;
+    for (var i = 0; i < g_scene.geometries.size; i++) {
+      temp = glMatrix.mat4.clone(this._mvp_matrix);
+      geom = g_scene.geometries.get(i);
+      // Perform transformations
+      for (var j = 0; j < geom.transformations.length; j++) {
+        switch (geom.transformations[j].type) {
+          case TRANSFORMATIONS.TRANSLATE:
+            glMatrix.mat4.translate(this._mvp_matrix, this._mvp_matrix, geom.transformations[j].vector);
+            break;
+          case TRANSFORMATIONS.ROTATE:
+            glMatrix.mat4.rotate(this._mvp_matrix, this._mvp_matrix, geom.transformations[j].rad, geom.transformations[j].vector);
+            break;
+          case TRANSFORMATIONS.SCALE:
+            glMatrix.mat4.scale(this._mvp_matrix, this._mvp_matrix, geom.transformations[j].vector);
+            break;
+          default:
+            break;
+        }
+      }
+      // Update vbo
+      gl.uniformMatrix4fv(this.u_mvp_matrix_loc, false, this._mvp_matrix);
+      // draw the appropriate shape
+      switch (geom.type) {
+        case GEOMETRIES.GRID:
+          gl.drawArrays(this.draw_method, this.grid_vertex_offset, this.grid_vertex_count);
+          break;
+        case GEOMETRIES.DISC:
+          gl.drawArrays(this.draw_method, this.disc_vertex_offset, this.disc_vertex_count);
+          break;
+        case GEOMETRIES.SPHERE:
+          gl.drawArrays(this.draw_method, this.sphere_vertex_offset, this.sphere_vertex_count);
+          break;
+        default:
+          break;
+      }
+      // Reset transformations
+      glMatrix.mat4.copy(this._mvp_matrix, temp);
+    }
   }
 
   /**

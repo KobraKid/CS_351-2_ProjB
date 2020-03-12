@@ -123,7 +123,6 @@ function initVBOBoxes() {
   const verts = Float32Array.from([
     ...appendGrid(),
     ...appendDisc(2),
-    ...appendDisc(2),
     ...appendSphere(),
   ]);
   vbo_0 = new VBOBox(

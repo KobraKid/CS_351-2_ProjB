@@ -4,24 +4,20 @@ const GEOMETRIES = {
   SPHERE: 2,
   CUBE: 3,
   R_S_T_: 4,
-}
+};
 
 class Geometry {
-  constructor(type, colors, material, ...params) {
+  constructor(type, material, ...params) {
     this._type = type;
     this._mat = material;
     this.world_to_model = glMatrix.mat4.create();
     this.normal_to_world = glMatrix.mat4.create();
+    this._transformations = [];
     switch (this._type) {
+      case GEOMETRIES.GRID:
+        break;
       case GEOMETRIES.DISC:
         this.radius = 2.0;
-        // fallthrough
-      case GEOMETRIES.GRID:
-        this.xgap = 1.0;
-        this.ygap = 1.0;
-        this.lineWidth = 0.1;
-        this.lineColor = colors[0];
-        this.gapColor = colors[1];
         break;
       case GEOMETRIES.SPHERE:
         this.radius = 2.0;
@@ -34,7 +30,6 @@ class Geometry {
         };
         break;
       case GEOMETRIES.CUBE:
-        this.color = colors[0];
         this.dmin = (p) => {
           return Math.sqrt(
             Math.pow(Math.max(0, Math.abs(p[0]) - 1), 2) +
@@ -44,7 +39,6 @@ class Geometry {
         };
         break;
       case GEOMETRIES.R_S_T_:
-        this.color = colors[0];
         this.dmin = (p) => {
           return Math.pow(Math.abs(p[0]), params[0]) + Math.pow(Math.abs(p[1]), params[1]) + Math.pow(Math.abs(p[2]), params[2]) - 1;
         };
@@ -54,6 +48,9 @@ class Geometry {
     }
   }
 
+  get transformations() {
+    return this._transformations;
+  }
   get type() {
     return this._type;
   }
@@ -86,7 +83,8 @@ class Geometry {
         glMatrix.vec4.scaleAndAdd(hit.hitPoint, rayT.origin, rayT.direction, t_0);
         glMatrix.vec4.negate(hit.viewNormal, inRay.direction);
         glMatrix.vec4.normalize(hit.viewNormal, hit.viewNormal);
-        glMatrix.vec4.copy(hit.surfaceNormal, hit.modelHitPoint);
+        glMatrix.vec4.transformMat4(hit.surfaceNormal, glMatrix.vec4.fromValues(0, 0, 1, 0), this.normal_to_world);
+        glMatrix.vec4.normalize(hit.surfaceNormal, hit.modelHitPoint);
         break;
       case GEOMETRIES.DISC:
         // copy ray and transform
@@ -156,7 +154,7 @@ class Geometry {
         glMatrix.vec4.scaleAndAdd(hit.hitPoint, inRay.origin, inRay.direction, hit.t_0);
         glMatrix.vec4.negate(hit.viewNormal, inRay.direction);
         glMatrix.vec4.normalize(hit.viewNormal, hit.viewNormal);
-        glMatrix.vec4.transformMat4(hit.surfaceNormal, glMatrix.vec4.fromValues(0, 0, 1, 0), this.normal_to_world);
+        glMatrix.vec4.transformMat4(hit.surfaceNormal, hit.modelHitPoint, this.normal_to_world);
         glMatrix.vec4.normalize(hit.surfaceNormal, hit.surfaceNormal);
         break;
         // Any 'ray marching' shapes
@@ -257,6 +255,7 @@ class Geometry {
   }
 
   rayTranslate(x, y, z) {
+    this.transformations.push(new TransformationBox(TRANSFORMATIONS.TRANSLATE, x, y, z));
     var inverse_translate = glMatrix.mat4.create();
     inverse_translate[12] = -x;
     inverse_translate[13] = -y;
@@ -266,6 +265,7 @@ class Geometry {
   }
 
   rayRotate(rad, ax, ay, az) {
+    this.transformations.push(new TransformationBox(TRANSFORMATIONS.ROTATE, ax, ay, az, rad));
     var x = ax;
     var y = ay;
     var z = az;
@@ -303,6 +303,7 @@ class Geometry {
   }
 
   rayScale(sx, sy, sz) {
+    this.transformations.push(new TransformationBox(TRANSFORMATIONS.SCALE, sx, sy, sz));
     if (Math.abs(sx) < glMatrix.GLMAT_EPSILON ||
       Math.abs(sy) < glMatrix.GLMAT_EPSILON ||
       Math.abs(sz) < glMatrix.GLMAT_EPSILON) {
@@ -333,6 +334,22 @@ class GeometryList {
 
   get(i) {
     return this._geom[i];
+  }
+
+}
+
+const TRANSFORMATIONS = {
+  TRANSLATE: 0,
+  ROTATE: 1,
+  SCALE: 2,
+};
+
+class TransformationBox {
+  constructor(type, ...params) {
+    this.type = type;
+    this.vector = glMatrix.vec3.fromValues(params[0], params[1], params[2]);
+    if (type == TRANSFORMATIONS.ROTATE)
+      this.rad = params[3];
   }
 
 }
