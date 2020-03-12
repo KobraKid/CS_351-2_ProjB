@@ -39,8 +39,9 @@ class Scene {
       this.ray_camera.rayLookAt(tracker.camera.eye_point, tracker.camera.aim_point, tracker.camera.up_vector);
 
       var buffer_index = 0;
-      var hit = new Hit(this.sky_color);
+      var hit = new Hit();
       var color = glMatrix.vec4.create();
+      var weight = 1 / (tracker.aa * tracker.aa);
 
       for (var p_y = 0; p_y < this.buffer.height; p_y++) {
         for (var p_x = 0; p_x < this.buffer.width; p_x++) {
@@ -48,14 +49,14 @@ class Scene {
           for (var subpixel = 0; subpixel < tracker.aa * tracker.aa; subpixel++) {
             this.ray_camera.makeEyeRay(this.eye_ray, p_x, p_y, subpixel);
             hit.clear();
-            this.trace(this.eye_ray, hit);
+            this.trace(this.eye_ray, hit, p_x, p_y);
             // find the shade at the hit point (potentially recursively)
-            this.shade(hit, color, tracker.depth);
+            glMatrix.vec4.add(color, color, this.shade(hit, tracker.depth));
           }
           buffer_index = (p_y * this.buffer.width + p_x) * this.buffer.pixel_size;
-          this.buffer.fBuf[buffer_index] = color[0];
-          this.buffer.fBuf[buffer_index + 1] = color[1];
-          this.buffer.fBuf[buffer_index + 2] = color[2];
+          this.buffer.fBuf[buffer_index] = color[0] * weight;
+          this.buffer.fBuf[buffer_index + 1] = color[1] * weight;
+          this.buffer.fBuf[buffer_index + 2] = color[2] * weight;
         }
       }
       this.buffer.toInt();
@@ -67,19 +68,20 @@ class Scene {
     });
   }
 
-  trace(ray, hit) {
+  trace(ray, hit, x = -1, y = -1) {
     // trace on each geometry to find the closest hit point
     for (var i = 0; i < this.geometries.size; i++) {
       this.geometries.get(i).trace(ray, hit);
+      if (hit.surfaceNormal[3] != 0)
+        console.log(hit.surfaceNormal[3], this.geometries.get(i).type, x, y);
     }
   }
 
-  shade(hit, color, depth) {
+  shade(hit, depth) {
     // if we hit nothing during tracing, then no need to proceed further
-    if (hit.hit_geometry == null) {
-      glMatrix.vec4.scaleAndAdd(color, color, hit.hit_color, 1 / (tracker.aa * tracker.aa));
-      return;
-    }
+    if (hit.hit_geometry == null) return glMatrix.vec4.clone(this.sky_color);
+
+    var color = glMatrix.vec4.create();
 
     /* Trace, find shadows */
 
@@ -91,20 +93,21 @@ class Scene {
       in_shadow = false;
       glMatrix.vec4.scaleAndAdd(this.shadow_ray.origin, hit.hitPoint, this.eye_ray.direction, -1.0E-3);
       glMatrix.vec4.subtract(this.shadow_ray.direction, this.lights.get(i).position, hit.hitPoint);
-      this.trace(this.shadow_ray, shadow_hit, color);
+      this.trace(this.shadow_ray, shadow_hit);
 
-      // we hit something closeer than the light source
+      // we hit something closer than the light source
       if (shadow_hit.hit_geometry != null && shadow_hit.t_0 <= glMatrix.vec4.dot(this.shadow_ray.direction, this.lights.get(i).position)) {
         in_shadow = true;
       }
 
       // Get the shade of the hit point
-      hit.hit_geometry.shade(hit, i, in_shadow);
-      glMatrix.vec4.zero(hit.hit_color);
-      glMatrix.vec4.add(hit.hit_color, hit.hit_color, hit.emissive);
-      glMatrix.vec4.add(hit.hit_color, hit.hit_color, hit.ambient);
-      glMatrix.vec4.add(hit.hit_color, hit.hit_color, hit.diffuse);
-      glMatrix.vec4.add(hit.hit_color, hit.hit_color, hit.specular);
+      hit.hit_geometry.shade(hit, i);
+
+      // Add color
+      glMatrix.vec4.add(color, color, hit.emissive);
+      if (i == 0) glMatrix.vec4.add(color, color, hit.ambient);
+      if (!in_shadow) glMatrix.vec4.add(color, color, hit.diffuse);
+      if (!in_shadow) glMatrix.vec4.add(color, color, hit.specular);
     }
 
     /* Reflections */
@@ -112,21 +115,14 @@ class Scene {
     if (depth > 0) {
       // Trace a reflection ray from the hit point about the normal
       var reflection_hit = new Hit();
-      glMatrix.vec4.scaleAndAdd(this.reflection_ray.origin, hit.hitPoint, this.eye_ray.direction, -1.0E-3);
+      reflection_hit.clear();
+      glMatrix.vec4.scaleAndAdd(this.reflection_ray.origin, hit.hitPoint, hit.viewNormal, 1.0E-3);
       Ray.reflect(this.reflection_ray.direction, hit.viewNormal, hit.surfaceNormal);
       this.trace(this.reflection_ray, reflection_hit);
-
-      // TODO: accumulate reflections accurately
-      // Removing the comparison to GRID creates a pure white with high enough recursive depth
-      if (reflection_hit.hit_geometry != null && reflection_hit.hit_geometry.type != GEOMETRIES.GRID) {
-        this.shade(reflection_hit, reflection_hit.hit_color, depth - 1);
-        glMatrix.vec4.scale(hit.hit_color, hit.hit_color, 0.5);
-        glMatrix.vec4.scaleAndAdd(hit.hit_color, hit.hit_color, reflection_hit.hit_color, 0.5);
-      }
+      var reflection_color = this.shade(reflection_hit, depth - 1);
+      glMatrix.vec4.add(color, color, glMatrix.vec4.multiply(reflection_color, glMatrix.vec4.scale(reflection_color, reflection_color, 0.1), hit.hit_geometry.material.K_s));
     }
-
-    // average color(s) from each subpixel
-    glMatrix.vec4.scaleAndAdd(color, color, hit.hit_color, 1 / (tracker.aa * tracker.aa));
+    return color;
   }
 
 }

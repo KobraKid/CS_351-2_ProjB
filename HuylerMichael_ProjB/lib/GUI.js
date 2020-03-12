@@ -16,7 +16,7 @@ let GuiTracker = function() {
     do_raytracing();
   };
   this.progress = 0;
-  this.resolution = 128;
+  this.resolution = 32;
   this.depth = 2;
   /* FPS */
   this.fps = 60.0;

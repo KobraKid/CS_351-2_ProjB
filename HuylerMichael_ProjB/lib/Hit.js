@@ -1,8 +1,6 @@
 class Hit {
-  constructor(color = glMatrix.vec4.fromValues(0, 0, 0, 1)) {
+  constructor() {
     this.hit_geometry = null;
-    this.default_color = glMatrix.vec4.clone(color);
-    this.hit_color = glMatrix.vec4.clone(color);
     this.ambient = glMatrix.vec4.create();
     this.diffuse = glMatrix.vec4.create();
     this.emissive = glMatrix.vec4.create();
@@ -13,12 +11,10 @@ class Hit {
     this.viewNormal = glMatrix.vec4.create();
     this.isEntering = true;
     this.modelHitPoint = glMatrix.vec4.create();
-    this.color = glMatrix.vec4.clone(color);
   }
 
   clear() {
     this.hit_geometry = null;
-    this.hit_color = glMatrix.vec4.clone(this.default_color);
     glMatrix.vec4.zero(this.ambient);
     glMatrix.vec4.zero(this.diffuse);
     glMatrix.vec4.zero(this.emissive);

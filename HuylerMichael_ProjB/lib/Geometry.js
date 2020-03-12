@@ -47,6 +47,7 @@ class Geometry {
       case GEOMETRIES.CYLINDER:
         this.radius = 1;
         this.dmin = (p) => {
+          return glMatrix.vec2.length(glMatrix.vec2.fromValues(p[0] - 1, p[1] - 1)) - 1;
           var q = glMatrix.vec3.create();
           var b = glMatrix.vec3.fromValues(1, 2, 1);
           glMatrix.vec3.subtract(q, glMatrix.vec3.fromValues(Math.abs(p[0]), Math.abs(p[1]), Math.abs(p[2])), b);
@@ -74,6 +75,9 @@ class Geometry {
     }
   }
 
+  get material() {
+    return this._mat;
+  }
   get transformations() {
     return this._transformations;
   }
@@ -88,13 +92,15 @@ class Geometry {
    * @param {!Hit} hit Holds the results of the traced intersection, if any.
    */
   trace(inRay, hit) {
+    // copy ray and transform
+    var rayT = new Ray();
+    glMatrix.vec4.transformMat4(rayT.origin, inRay.origin, this.world_to_model);
+    glMatrix.vec4.transformMat4(rayT.direction, inRay.direction, this.world_to_model);
+
+    var point_to_vec = glMatrix.vec4.fromValues(0, 0, 0, 1);
+
     switch (this.type) {
       case GEOMETRIES.GRID:
-        // copy ray and transform
-        var rayT = new Ray();
-        glMatrix.vec4.transformMat4(rayT.origin, inRay.origin, this.world_to_model);
-        glMatrix.vec4.transformMat4(rayT.direction, inRay.direction, this.world_to_model);
-
         // find the hit point
         var t_0 = -rayT.origin[2] / rayT.direction[2];
 
@@ -110,17 +116,9 @@ class Geometry {
         glMatrix.vec4.negate(hit.viewNormal, inRay.direction);
         glMatrix.vec4.normalize(hit.viewNormal, hit.viewNormal);
         glMatrix.vec4.transformMat4(hit.surfaceNormal, glMatrix.vec4.fromValues(0, 0, 1, 0), this.normal_to_world);
-        glMatrix.vec4.normalize(hit.surfaceNormal, hit.modelHitPoint);
+        glMatrix.vec4.normalize(hit.surfaceNormal, hit.surfaceNormal);
         break;
       case GEOMETRIES.DISC:
-        // copy ray and transform
-        var rayT = new Ray();
-        glMatrix.vec4.copy(rayT.origin, inRay.origin);
-        glMatrix.vec4.copy(rayT.direction, inRay.direction);
-
-        glMatrix.vec4.transformMat4(rayT.origin, inRay.origin, this.world_to_model);
-        glMatrix.vec4.transformMat4(rayT.direction, inRay.direction, this.world_to_model);
-
         // find the hit point
         var t_0 = -rayT.origin[2] / rayT.direction[2];
 
@@ -128,30 +126,25 @@ class Geometry {
         // or outside of radius
         if (t_0 < 0 || t_0 > hit.t_0)
           return;
-        var plane_intxn = glMatrix.vec4.create();
-        glMatrix.vec4.scaleAndAdd(plane_intxn, rayT.origin, rayT.direction, t_0);
+        var plane_intxn = glMatrix.vec4.scaleAndAdd(glMatrix.vec4.create(), rayT.origin, rayT.direction, t_0);
         if (plane_intxn[0] * plane_intxn[0] + plane_intxn[1] * plane_intxn[1] > this.radius * this.radius)
           return;
 
         hit.t_0 = t_0;
         hit.hit_geometry = this;
         if (inRay.shadow) return;
-        glMatrix.vec4.copy(hit.modelHitPoint, plane_intxn);
+        glMatrix.vec4.scaleAndAdd(hit.modelHitPoint, rayT.origin, rayT.direction, t_0);
         glMatrix.vec4.scaleAndAdd(hit.hitPoint, inRay.origin, inRay.direction, t_0);
         glMatrix.vec4.negate(hit.viewNormal, inRay.direction);
         glMatrix.vec4.normalize(hit.viewNormal, hit.viewNormal);
         glMatrix.vec4.transformMat4(hit.surfaceNormal, glMatrix.vec4.fromValues(0, 0, 1, 0), this.normal_to_world);
         glMatrix.vec4.normalize(hit.surfaceNormal, hit.surfaceNormal);
+        hit.surfaceNormal[3] = 0;
         break;
       case GEOMETRIES.SPHERE:
-        // copy ray and transform
-        var rayT = new Ray();
-        glMatrix.vec4.transformMat4(rayT.origin, inRay.origin, this.world_to_model);
-        glMatrix.vec4.transformMat4(rayT.direction, inRay.direction, this.world_to_model);
-
         // ray to sphere center
         var r2s = glMatrix.vec4.create();
-        glMatrix.vec4.subtract(r2s, glMatrix.vec4.fromValues(0, 0, 0, 1), rayT.origin);
+        glMatrix.vec4.subtract(r2s, point_to_vec, rayT.origin);
         // |r2s|^2
         var L2 = glMatrix.vec3.dot(r2s, r2s);
         if (L2 <= 1.0) return; // inside sphere
@@ -180,17 +173,12 @@ class Geometry {
         glMatrix.vec4.scaleAndAdd(hit.hitPoint, inRay.origin, inRay.direction, hit.t_0);
         glMatrix.vec4.negate(hit.viewNormal, inRay.direction);
         glMatrix.vec4.normalize(hit.viewNormal, hit.viewNormal);
-        glMatrix.vec4.transformMat4(hit.surfaceNormal, hit.modelHitPoint, this.normal_to_world);
-        glMatrix.vec4.normalize(hit.surfaceNormal, hit.surfaceNormal);
+        hit.surfaceNormal = glMatrix.vec4.clone(hit.modelHitPoint);
+        glMatrix.vec4.subtract(hit.surfaceNormal, hit.surfaceNormal, point_to_vec);
         break;
-        // Any 'ray marching' shapes
       case GEOMETRIES.CUBE:
       case GEOMETRIES.SUPERQUADRATIC:
-        // copy ray and transform
-        var rayT = new Ray();
-        glMatrix.vec4.transformMat4(rayT.origin, inRay.origin, this.world_to_model);
-        glMatrix.vec4.transformMat4(rayT.direction, inRay.direction, this.world_to_model);
-
+      // Any 'ray marching' shapes
         var A = 1;
         var B = 1;
         var C = 1;
@@ -246,11 +234,6 @@ class Geometry {
         glMatrix.vec4.normalize(hit.surfaceNormal, hit.surfaceNormal);
         break;
       case GEOMETRIES.CYLINDER:
-        // copy ray and transform
-        var rayT = new Ray();
-        glMatrix.vec4.transformMat4(rayT.origin, inRay.origin, this.world_to_model);
-        glMatrix.vec4.transformMat4(rayT.direction, inRay.direction, this.world_to_model);
-
         // create a point p that will march toward a surface
         var p = glMatrix.vec4.clone(rayT.origin);
         var march = 0;
@@ -285,7 +268,7 @@ class Geometry {
    *
    * @param {!Hit} hit The hit point where the shading is being done.
    */
-  shade(hit, light_index, in_shadow) {
+  shade(hit, light_index) {
     var light_pos = glMatrix.vec4.fromValues(
       g_scene.lights.get(light_index).position[0],
       g_scene.lights.get(light_index).position[1],
@@ -294,36 +277,31 @@ class Geometry {
 
     glMatrix.vec4.transformMat4(light_pos, light_pos, this.world_to_model);
 
-    var N = glMatrix.vec4.fromValues(hit.modelHitPoint[0], hit.modelHitPoint[1], hit.modelHitPoint[2], 0);
-    glMatrix.vec4.normalize(N, N);
+    var N = hit.surfaceNormal;
     var L = glMatrix.vec4.subtract(glMatrix.vec4.create(), light_pos, hit.modelHitPoint);
     glMatrix.vec4.normalize(L, L);
     var n_dot_l = glMatrix.vec4.dot(N, L);
-    var R = glMatrix.vec4.create();
-    Ray.reflect(R, L, N);
+    var R = Ray.reflect(glMatrix.vec4.create(), L, N);
 
     var attenuation = 1 / glMatrix.vec4.length(L);
     // Emissive
     glMatrix.vec4.copy(hit.emissive, this._mat.K_e);
     // Ambient illumination * ambient reflectance
     glMatrix.vec4.multiply(hit.ambient, this._mat.I_a, this._mat.K_a);
-    // Only add diffuse and specular if not in shadow
-    if (!in_shadow) {
-      // Duffuse illumination * diffuse reflectance
-      glMatrix.vec4.scaleAndAdd(hit.diffuse, hit.diffuse,
-        glMatrix.vec4.multiply(
-          glMatrix.vec4.create(),
-          this._mat.I_d,
-          this._mat.K_d),
-        Math.max(0, n_dot_l) * attenuation);
-      // Specular illumination * specular reflectance
-      glMatrix.vec4.scaleAndAdd(hit.specular, hit.specular,
-        glMatrix.vec4.multiply(
-          glMatrix.vec4.create(),
-          this._mat.I_s,
-          this._mat.K_s),
-        Math.pow(Math.max(0, glMatrix.vec4.dot(R, hit.viewNormal)), this._mat.se) * attenuation);
-    }
+    // Duffuse illumination * diffuse reflectance
+    glMatrix.vec4.scale(hit.diffuse,
+      glMatrix.vec4.multiply(
+        glMatrix.vec4.create(),
+        this._mat.I_d,
+        this._mat.K_d),
+      Math.max(0, n_dot_l) * attenuation);
+    // Specular illumination * specular reflectance
+    glMatrix.vec4.scale(hit.specular,
+      glMatrix.vec4.multiply(
+        glMatrix.vec4.create(),
+        this._mat.I_s,
+        this._mat.K_s),
+      Math.pow(Math.max(0, glMatrix.vec4.dot(R, hit.surfaceNormal)), this._mat.se) * attenuation);
   }
 
   setIdentity() {

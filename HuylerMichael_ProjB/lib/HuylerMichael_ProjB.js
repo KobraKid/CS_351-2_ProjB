@@ -108,6 +108,7 @@ function initScenes() {
       new TransformationBox(TRANSFORMATIONS.TRANSLATE, 0, 0, 1),
     ]));
     scene.lights.add(new Light(glMatrix.vec4.fromValues(0, -8, 3, 1)));
+    scene.lights.add(new Light(glMatrix.vec4.fromValues(1, 1, 10, 1)));
     scene.setImageBuffer(new ImageBuffer(tracker.resolution, tracker.resolution));
     scenes.push(scene);
   }
@@ -122,7 +123,7 @@ function initScenes() {
       mouse_drag_x: -2.1767304860088315,
       mouse_drag_y: -0.49779086892489066,
     });
-    scene.geometries.add(new Geometry(GEOMETRIES.GRID, MATERIALS.BLACK_RUBBER, []));
+    scene.geometries.add(new Geometry(GEOMETRIES.GRID, MATERIALS.OBSIDIAN, []));
     scene.geometries.add(new Geometry(GEOMETRIES.SPHERE, MATERIALS.RED_PLASTIC, [
       new TransformationBox(TRANSFORMATIONS.TRANSLATE, -1.01, -1, 1),
     ]));
@@ -153,11 +154,30 @@ function initScenes() {
       mouse_drag_x: 0,
       mouse_drag_y: 0,
     });
-    // scene.geometries.add(new Geometry(GEOMETRIES.GRID, MATERIALS.BLACK_PLASTIC, []));
+    scene.geometries.add(new Geometry(GEOMETRIES.GRID, MATERIALS.CHROME, []));
     scene.geometries.add(new Geometry(GEOMETRIES.CYLINDER, MATERIALS.BLUE_PLASTIC, [
       new TransformationBox(TRANSFORMATIONS.TRANSLATE, 0, 0, 1),
     ], 2, 2, 2));
     scene.lights.add(new Light(glMatrix.vec4.fromValues(0, -8, 3, 1)));
+    scene.setImageBuffer(new ImageBuffer(tracker.resolution, tracker.resolution));
+    scenes.push(scene);
+  }
+  // Scene 4
+  {
+    let scene = new Scene({
+      yaw: tracker.camera.initial_yaw,
+      pitch: tracker.camera.initial_pitch,
+      eye_point: glMatrix.vec4.clone(tracker.camera.eye_point),
+      aim_point: glMatrix.vec4.clone(tracker.camera.aim_point),
+      up_vector: glMatrix.vec4.clone(tracker.camera.up_vector),
+      mouse_drag_x: 0,
+      mouse_drag_y: 0,
+    });
+    scene.geometries.add(new Geometry(GEOMETRIES.GRID, MATERIALS.BLACK_PLASTIC, []));
+    scene.geometries.add(new Geometry(GEOMETRIES.DISC, MATERIALS.EMERALD, [
+      new TransformationBox(TRANSFORMATIONS.TRANSLATE, 0, 0, 1),
+    ]));
+    scene.lights.add(new Light(glMatrix.vec4.fromValues(2, 0, 2, 1)));
     scene.setImageBuffer(new ImageBuffer(tracker.resolution, tracker.resolution));
     scenes.push(scene);
   }
