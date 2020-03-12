@@ -19,13 +19,11 @@ class Scene {
     glMatrix.vec4.copy(tracker.camera.up_vector, this.default_camera.up_vector);
     mouse_drag_x = this.default_camera.mouse_drag_x;
     mouse_drag_y = this.default_camera.mouse_drag_y;
-    this.ray_camera.setSize(tracker.resolution, tracker.resolution);
     this.ray_camera.rayPerspective(tracker.camera.fovy, tracker.camera.aspect, tracker.camera.near);
     this.ray_camera.rayLookAt(tracker.camera.eye_point, tracker.camera.aim_point, tracker.camera.up_vector);
   }
 
   setImageBuffer(buffer) {
-    console.log('buh ' + Math.random());
     this.ray_camera.setSize(buffer.width, buffer.height);
     this.buffer = buffer;
   }
@@ -35,6 +33,7 @@ class Scene {
       tracker.progress = 0;
 
       // Ensure that the camera matches the WebGL preview at all times
+      this.ray_camera.setSize(this.buffer.width, this.buffer.height);
       this.ray_camera.rayPerspective(tracker.camera.fovy, tracker.camera.aspect, tracker.camera.near);
       this.ray_camera.rayLookAt(tracker.camera.eye_point, tracker.camera.aim_point, tracker.camera.up_vector);
 
