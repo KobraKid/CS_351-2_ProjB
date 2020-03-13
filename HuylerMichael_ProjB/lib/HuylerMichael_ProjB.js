@@ -114,8 +114,8 @@ function initScenes() {
     scene.geometries.add(new Geometry(GEOMETRIES.SPHERE, MATERIALS.CHROME, [
       new TransformationBox(TRANSFORMATIONS.TRANSLATE, 0, 2 * Math.sin(Math.PI / 3), 1),
     ]));
-    scene.lights.add(new Light(glMatrix.vec4.fromValues(0, 0, 3, 1)));
-    scene.lights.add(new Light(glMatrix.vec4.fromValues(1, 1, 10, 1)));
+    scene.lights.add(new Light(glMatrix.vec4.fromValues(0, 0, 3, 1)), 1);
+    scene.lights.add(new Light(glMatrix.vec4.fromValues(1, 1, 10, 1)), 1);
     scene.setImageBuffer(new ImageBuffer(tracker.resolution, tracker.resolution));
     scenes.push(scene);
   }
@@ -146,8 +146,8 @@ function initScenes() {
     scene.geometries.add(new Geometry(GEOMETRIES.DISC, MATERIALS.EMERALD, [
       new TransformationBox(TRANSFORMATIONS.TRANSLATE, -3, 1, 1.3),
     ]));
-    scene.lights.add(new Light(glMatrix.vec4.fromValues(-6, -3, 2, 1)));
-    scene.lights.add(new Light(glMatrix.vec4.fromValues(6, -3, 2, 1)));
+    scene.lights.add(new Light(glMatrix.vec4.fromValues(-6, -3, 2, 1)), 2);
+    scene.lights.add(new Light(glMatrix.vec4.fromValues(6, -3, 2, 1)), 2);
     scene.setImageBuffer(new ImageBuffer(tracker.resolution, tracker.resolution));
     scenes.push(scene);
   }
@@ -181,10 +181,10 @@ function initScenes() {
     scene.geometries.add(new Geometry(GEOMETRIES.SPHERE, MATERIALS.TURQUOISE, [
       new TransformationBox(TRANSFORMATIONS.TRANSLATE, 0, -2, -0.25),
     ]));
-    scene.lights.add(new Light(glMatrix.vec4.fromValues(0, -8, 4, 1)));
-    scene.lights.add(new Light(glMatrix.vec4.fromValues(-8, 0, 4, 1)));
-    scene.lights.add(new Light(glMatrix.vec4.fromValues(8, 0, 4, 1)));
-    scene.lights.add(new Light(glMatrix.vec4.fromValues(0, -3, 5, 1)));
+    scene.lights.add(new Light(glMatrix.vec4.fromValues(0, -8, 4, 1)), 3);
+    scene.lights.add(new Light(glMatrix.vec4.fromValues(-8, 0, 4, 1)), 3);
+    scene.lights.add(new Light(glMatrix.vec4.fromValues(8, 0, 4, 1)), 3);
+    scene.lights.add(new Light(glMatrix.vec4.fromValues(0, -3, 5, 1)), 3);
     scene.setImageBuffer(new ImageBuffer(tracker.resolution, tracker.resolution));
     scenes.push(scene);
   }
@@ -223,7 +223,7 @@ function initScenes() {
       new TransformationBox(TRANSFORMATIONS.TRANSLATE, 3.5, 0, 1),
       new TransformationBox(TRANSFORMATIONS.ROTATE, 0, 1, 0, -0.25 * Math.PI),
     ]));
-    scene.lights.add(new Light(glMatrix.vec4.fromValues(2, 2, 2, 1)));
+    scene.lights.add(new Light(glMatrix.vec4.fromValues(2, 2, 2, 1)), 4);
     scene.setImageBuffer(new ImageBuffer(tracker.resolution, tracker.resolution));
     scenes.push(scene);
   }

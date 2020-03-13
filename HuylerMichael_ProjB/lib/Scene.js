@@ -86,6 +86,8 @@ class Scene {
     var shadow_hit = new Hit();
     var in_shadow;
     for (var i = 0; i < this.lights.size; i++) {
+      if (!this.lights.get(i).enabled) continue;
+
       // Trace a shadow ray from the hit point to each light source
       shadow_hit.clear();
       in_shadow = false;

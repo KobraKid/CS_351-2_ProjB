@@ -8,6 +8,7 @@
  */
 
 var gui;
+var lights;
 var gui_open = true;
 let GuiTracker = function() {
   this.scene = 0;
@@ -113,6 +114,7 @@ function initGui() {
   aa.open();
   // TRACE
   gui.add(tracker, 'trace').name('Trace!');
+  lights = gui.addFolder('Lights');
   // gui.add(tracker, 'progress', 0, 100, 1).name('Progress:').listen();
   gui.open();
   document.getElementsByClassName('close-bottom')[0].onclick = function() {
