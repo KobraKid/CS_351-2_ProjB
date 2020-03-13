@@ -38,8 +38,8 @@ const MAX_MISS = 10000;
  */
 function main() {
   canvas = document.getElementById('webgl');
-  canvas.width = window.innerHeight * 2;
-  canvas.height = window.innerHeight;
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerWidth / 2;
   aspect = canvas.width / canvas.height;
 
   gl = canvas.getContext("webgl", {
@@ -200,14 +200,13 @@ function initScenes() {
       mouse_drag_y: -0.7475252915820627,
     });
     scene.geometries.add(new Geometry(GEOMETRIES.GRID, MATERIALS.PEWTER, []));
-    scene.geometries.add(new Geometry(GEOMETRIES.CROSSED_CYLINDERS, MATERIALS.RUBY, [
+    scene.geometries.add(new Geometry(GEOMETRIES.UNION_CYLINDERS, MATERIALS.RUBY, [
       new TransformationBox(TRANSFORMATIONS.TRANSLATE, 0, 0, 2),
     ]));
-    scene.geometries.add(new Geometry(GEOMETRIES.SPHERE, MATERIALS.PEARL, [
+    scene.geometries.add(new Geometry(GEOMETRIES.CYLINDER, MATERIALS.PEARL, [
       new TransformationBox(TRANSFORMATIONS.ROTATE, 0, 0, 1, -0.25 * Math.PI),
       new TransformationBox(TRANSFORMATIONS.ROTATE, 0, 1, 0, Math.PI / 6),
       new TransformationBox(TRANSFORMATIONS.TRANSLATE, 2, 0, 4),
-      new TransformationBox(TRANSFORMATIONS.SCALE, 1, 1, 4),
     ]));
     scene.geometries.add(new Geometry(GEOMETRIES.SPHERE, MATERIALS.PEARL, [
       new TransformationBox(TRANSFORMATIONS.ROTATE, 0, 0, 1, -0.75 * Math.PI),

@@ -4,7 +4,7 @@ const GEOMETRIES = {
   SPHERE: 2,
   CUBE: 3,
   CYLINDER: 4,
-  CROSSED_CYLINDERS: 5,
+  UNION_CYLINDERS: 5,
 };
 
 class Geometry {
@@ -49,7 +49,7 @@ class Geometry {
             return Math.sqrt(Math.pow(p[0], 2) + Math.pow(p[1], 2) + Math.pow(p[2] - (p[2] > 0 ? this.size : -this.size), 2)) - this.rad;
         };
         break;
-      case GEOMETRIES.CROSSED_CYLINDERS:
+      case GEOMETRIES.UNION_CYLINDERS:
         this.size = 3;
         this.rad = 1;
         this.cyl1 = function(p) {
@@ -226,7 +226,7 @@ class Geometry {
         glMatrix.vec4.normalize(hit.surfaceNormal, hit.surfaceNormal);
         break;
       case GEOMETRIES.CYLINDER:
-      case GEOMETRIES.CROSSED_CYLINDERS:
+      case GEOMETRIES.UNION_CYLINDERS:
         // March starting from the ray's origin
         var p = glMatrix.vec4.clone(rayT.origin);
         var t_0 = this.ray_march(p, rayT.direction);

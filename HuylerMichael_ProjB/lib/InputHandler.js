@@ -263,7 +263,7 @@ function mouseToCVV(ev) {
  * current rendering context according to the new canvas size and aspect ratio.
  */
 function drawResize() {
-  canvas.width = window.innerHeight * 2;
-  canvas.height = window.innerHeight;
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerWidth / 2;
   aspect = canvas.width / canvas.height;
 }
