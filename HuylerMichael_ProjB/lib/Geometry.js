@@ -3,8 +3,8 @@ const GEOMETRIES = {
   DISC: 1,
   SPHERE: 2,
   CUBE: 3,
-  SUPERQUADRATIC: 4,
-  CYLINDER: 5,
+  CYLINDER: 4,
+  CROSSED_CYLINDERS: 5,
 };
 
 class Geometry {
@@ -39,20 +39,40 @@ class Geometry {
           );
         };
         break;
-      case GEOMETRIES.SUPERQUADRATIC:
+      case GEOMETRIES.CYLINDER:
+        this.size = 3;
+        this.rad = 1;
         this.dmin = (p) => {
-          return 0;
+          if (Math.abs(p[2]) < this.size)
+            return Math.sqrt(Math.pow(p[0], 2) + Math.pow(p[1], 2)) - this.rad;
+          else
+            return Math.sqrt(Math.pow(p[0], 2) + Math.pow(p[1], 2) + Math.pow(p[2] - (p[2] > 0 ? this.size : -this.size), 2)) - this.rad;
         };
         break;
-      case GEOMETRIES.CYLINDER:
-        this.radius = 1;
+      case GEOMETRIES.CROSSED_CYLINDERS:
+        this.size = 3;
+        this.rad = 1;
+        this.cyl1 = function(p) {
+          if (Math.abs(p[2]) < this.size)
+            return Math.sqrt(Math.pow(p[0], 2) + Math.pow(p[1], 2)) - this.rad;
+          else
+            return Math.sqrt(Math.pow(p[0], 2) + Math.pow(p[1], 2) + Math.pow(p[2] - (p[2] > 0 ? this.size : -this.size), 2)) - this.rad;
+        };
+        this.cyl2 = function(p) {
+          if (Math.abs(p[0]) < this.size)
+            return Math.sqrt(Math.pow(p[2], 2) + Math.pow(p[1], 2)) - this.rad;
+          else
+            return Math.sqrt(Math.pow(p[2], 2) + Math.pow(p[1], 2) + Math.pow(p[0] - (p[0] > 0 ? this.size : -this.size), 2)) - this.rad;
+        };
+        this.cyl3 = function(p) {
+          if (Math.abs(p[1]) < this.size)
+            return Math.sqrt(Math.pow(p[0], 2) + Math.pow(p[2], 2)) - this.rad;
+          else
+            return Math.sqrt(Math.pow(p[0], 2) + Math.pow(p[2], 2) + Math.pow(p[1] - (p[1] > 0 ? this.size : -this.size), 2)) - this.rad;
+        };
         this.dmin = (p) => {
-          return glMatrix.vec2.length(glMatrix.vec2.fromValues(p[0] - 1, p[1] - 1)) - 1;
-          var q = glMatrix.vec3.create();
-          var b = glMatrix.vec3.fromValues(1, 2, 1);
-          glMatrix.vec3.subtract(q, glMatrix.vec3.fromValues(Math.abs(p[0]), Math.abs(p[1]), Math.abs(p[2])), b);
-          return glMatrix.vec3.length(glMatrix.vec3.fromValues(Math.max(0, q[0]), Math.max(0, q[1]), Math.max(0, q[2]))) + Math.min(Math.max(q[0], Math.max(q[1], q[2])), 0);
-        }
+          return Math.min(Math.min(this.cyl1(p), this.cyl2(p)), this.cyl3(p));
+        };
         break;
       default:
         break;
@@ -139,7 +159,6 @@ class Geometry {
         glMatrix.vec4.normalize(hit.viewNormal, hit.viewNormal);
         glMatrix.vec4.transformMat4(hit.surfaceNormal, glMatrix.vec4.fromValues(0, 0, 1, 0), this.normal_to_world);
         glMatrix.vec4.normalize(hit.surfaceNormal, hit.surfaceNormal);
-        hit.surfaceNormal[3] = 0;
         break;
       case GEOMETRIES.SPHERE:
         // ray to sphere center
@@ -177,72 +196,9 @@ class Geometry {
         glMatrix.vec4.subtract(hit.surfaceNormal, hit.surfaceNormal, point_to_vec);
         break;
       case GEOMETRIES.CUBE:
-      case GEOMETRIES.SUPERQUADRATIC:
-      // Any 'ray marching' shapes
-        var A = 1;
-        var B = 1;
-        var C = 1;
-        var D = 0;
-        var E = 0;
-        var F = 0;
-        var G = 0;
-        var H = 0;
-        var I = 0;
-        var J = -1;
-        var Aq =
-          (A * rayT.direction[0] * rayT.direction[0]) +
-          (B * rayT.direction[1] * rayT.direction[1]) +
-          (C * rayT.direction[2] * rayT.direction[2]) +
-          (D * rayT.direction[0] * rayT.direction[1]) +
-          (E * rayT.direction[0] * rayT.direction[2]) +
-          (F * rayT.direction[1] * rayT.direction[2]);
-        var Bq =
-          (2 * A * rayT.origin[0] * rayT.direction[0]) +
-          (2 * B * rayT.origin[1] * rayT.direction[1]) +
-          (2 * C * rayT.origin[2] * rayT.direction[2]) +
-          (D * (rayT.origin[0] * rayT.direction[1] + rayT.origin[1] * rayT.direction[0])) +
-          (E * (rayT.origin[0] * rayT.direction[2] + rayT.origin[2] * rayT.direction[0])) +
-          (F * (rayT.origin[1] * rayT.direction[2] + rayT.origin[2] * rayT.direction[1])) +
-          (G * rayT.direction[0]) +
-          (H * rayT.direction[1]) +
-          (I * rayT.direction[2]);
-        var Cq =
-          (A * rayT.origin[0] * rayT.origin[0]) +
-          (B * rayT.origin[1] * rayT.origin[1]) +
-          (C * rayT.origin[2] * rayT.origin[2]) +
-          (D * rayT.origin[0] * rayT.origin[1]) +
-          (E * rayT.origin[0] * rayT.origin[2]) +
-          (F * rayT.origin[1] * rayT.origin[2]) +
-          (G * rayT.origin[0]) +
-          (H * rayT.origin[1]) +
-          (I * rayT.origin[2]) +
-          J;
-        var t_0 = (Aq == 0) ? -Cq / Bq : (-Bq - Math.sqrt(Bq * Bq - 4 * Aq * Cq)) / 2 * Aq;
-        if (Bq * Bq - 4 * Aq * Cq < 0) return;
-        if (t_0 <= 0) t_0 = (-Bq + Math.sqrt(Bq * Bq - 4 * Aq * Cq)) / 2 * Aq;
-
-        if (t_0 > hit.t_0) return; // farther than some previous hit
-
-        hit.t_0 = t_0;
-        hit.hit_geometry = this;
-        if (inRay.shadow) return;
-        glMatrix.vec4.scaleAndAdd(hit.modelHitPoint, rayT.origin, rayT.direction, hit.t_0);
-        glMatrix.vec4.scaleAndAdd(hit.hitPoint, inRay.origin, inRay.direction, hit.t_0);
-        glMatrix.vec4.negate(hit.viewNormal, inRay.direction);
-        glMatrix.vec4.normalize(hit.viewNormal, hit.viewNormal);
-        glMatrix.vec4.transformMat4(hit.surfaceNormal, glMatrix.vec4.fromValues(0, 0, 1, 0), this.normal_to_world);
-        glMatrix.vec4.normalize(hit.surfaceNormal, hit.surfaceNormal);
-        break;
-      case GEOMETRIES.CYLINDER:
-        // create a point p that will march toward a surface
+        // March starting from the ray's origin
         var p = glMatrix.vec4.clone(rayT.origin);
-        var march = 0;
-        var t_0 = 0;
-        do {
-          glMatrix.vec4.scaleAndAdd(p, p, rayT.direction, march);
-          march = this.dmin(p);
-          t_0 += march;
-        } while (march > EPSILON && march < MAX_MISS);
+        var t_0 = this.ray_march(p, rayT.direction);
 
         if (this.dmin(p) > MAX_MISS) return; // too big, missed
 
@@ -255,12 +211,59 @@ class Geometry {
         glMatrix.vec4.scaleAndAdd(hit.hitPoint, inRay.origin, inRay.direction, hit.t_0);
         glMatrix.vec4.negate(hit.viewNormal, inRay.direction);
         glMatrix.vec4.normalize(hit.viewNormal, hit.viewNormal);
-        glMatrix.vec4.transformMat4(hit.surfaceNormal, glMatrix.vec4.fromValues(0, 0, 1, 0), this.normal_to_world);
+        var x_dist = Math.abs(Math.abs(hit.modelHitPoint[0]) - 1);
+        var y_dist = Math.abs(Math.abs(hit.modelHitPoint[1]) - 1);
+        var z_dist = Math.abs(Math.abs(hit.modelHitPoint[2]) - 1);
+        if (x_dist < y_dist && x_dist < z_dist)
+          hit.surfaceNormal = glMatrix.vec4.fromValues(hit.modelHitPoint[0], 0, 0, 0);
+        else if (y_dist < x_dist && y_dist < z_dist)
+          hit.surfaceNormal = glMatrix.vec4.fromValues(0, hit.modelHitPoint[1], 0, 0);
+        else
+          hit.surfaceNormal = glMatrix.vec4.fromValues(0, 0, hit.modelHitPoint[2], 0);
+        glMatrix.vec4.normalize(hit.surfaceNormal, hit.surfaceNormal);
+        // console.log(hit.modelHitPoint, hit.surfaceNormal);
+        glMatrix.vec4.transformMat4(hit.surfaceNormal, hit.surfaceNormal, this.normal_to_world);
+        glMatrix.vec4.normalize(hit.surfaceNormal, hit.surfaceNormal);
+        break;
+      case GEOMETRIES.CYLINDER:
+      case GEOMETRIES.CROSSED_CYLINDERS:
+        // March starting from the ray's origin
+        var p = glMatrix.vec4.clone(rayT.origin);
+        var t_0 = this.ray_march(p, rayT.direction);
+
+        if (this.dmin(p) > MAX_MISS) return; // too big, missed
+
+        if (t_0 > hit.t_0) return; // farther than some previous hit
+
+        hit.t_0 = t_0;
+        hit.hit_geometry = this;
+        if (inRay.shadow) return;
+        glMatrix.vec4.scaleAndAdd(hit.modelHitPoint, rayT.origin, rayT.direction, hit.t_0);
+        glMatrix.vec4.scaleAndAdd(hit.hitPoint, inRay.origin, inRay.direction, hit.t_0);
+        glMatrix.vec4.negate(hit.viewNormal, inRay.direction);
+        glMatrix.vec4.normalize(hit.viewNormal, hit.viewNormal);
+        hit.surfaceNormal = Math.abs(hit.modelHitPoint[2]) < 1 ?
+          glMatrix.vec4.fromValues(hit.modelHitPoint[0], hit.modelHitPoint[1], 0, 0) :
+          glMatrix.vec4.fromValues(hit.modelHitPoint[0], hit.modelHitPoint[1], Math.abs(hit.modelHitPoint[2]) - 1, 0);
+        glMatrix.vec4.transformMat4(hit.surfaceNormal, hit.surfaceNormal, this.normal_to_world);
         glMatrix.vec4.normalize(hit.surfaceNormal, hit.surfaceNormal);
         break;
       default:
         break;
     }
+    // sanity check
+    hit.surfaceNormal[3] = 0;
+  }
+
+  ray_march(p, dir) {
+    var march = 0;
+    var t_0 = 0;
+    do {
+      glMatrix.vec4.scaleAndAdd(p, p, dir, march);
+      march = this.dmin(p);
+      t_0 += march;
+    } while (march > EPSILON && march < MAX_MISS);
+    return t_0;
   }
 
   /**
@@ -284,24 +287,28 @@ class Geometry {
     var R = Ray.reflect(glMatrix.vec4.create(), L, N);
 
     var attenuation = 1 / glMatrix.vec4.length(L);
+    var mat = (this.type == GEOMETRIES.GRID &&
+        (Math.abs(hit.modelHitPoint[0] - Math.floor(hit.modelHitPoint[0])) < 0.1 ||
+          Math.abs(hit.modelHitPoint[1] - Math.floor(hit.modelHitPoint[1])) < 0.1)) ?
+      MATERIALS.BLACK_RUBBER : this._mat;
     // Emissive
-    glMatrix.vec4.copy(hit.emissive, this._mat.K_e);
+    glMatrix.vec4.copy(hit.emissive, mat.K_e);
     // Ambient illumination * ambient reflectance
-    glMatrix.vec4.multiply(hit.ambient, this._mat.I_a, this._mat.K_a);
+    glMatrix.vec4.multiply(hit.ambient, mat.I_a, mat.K_a);
     // Duffuse illumination * diffuse reflectance
     glMatrix.vec4.scale(hit.diffuse,
       glMatrix.vec4.multiply(
         glMatrix.vec4.create(),
-        this._mat.I_d,
-        this._mat.K_d),
+        mat.I_d,
+        mat.K_d),
       Math.max(0, n_dot_l) * attenuation);
     // Specular illumination * specular reflectance
     glMatrix.vec4.scale(hit.specular,
       glMatrix.vec4.multiply(
         glMatrix.vec4.create(),
-        this._mat.I_s,
-        this._mat.K_s),
-      Math.pow(Math.max(0, glMatrix.vec4.dot(R, hit.surfaceNormal)), this._mat.se) * attenuation);
+        mat.I_s,
+        mat.K_s),
+      Math.pow(Math.max(0, glMatrix.vec4.dot(R, hit.surfaceNormal)), mat.se) * attenuation);
   }
 
   setIdentity() {

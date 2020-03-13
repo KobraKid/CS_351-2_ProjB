@@ -72,8 +72,6 @@ class Scene {
     // trace on each geometry to find the closest hit point
     for (var i = 0; i < this.geometries.size; i++) {
       this.geometries.get(i).trace(ray, hit);
-      if (hit.surfaceNormal[3] != 0)
-        console.log(hit.surfaceNormal[3], this.geometries.get(i).type, x, y);
     }
   }
 

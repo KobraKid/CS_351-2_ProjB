@@ -39,6 +39,7 @@ function keyDown(kev) {
       tracker.jitter = !tracker.jitter;
       break;
     case "KeyC":
+      // Generate code to facilitate making template scenes
       console.log(`Camera state:
 yaw: ${tracker.camera.yaw},
 pitch: ${tracker.camera.pitch},
